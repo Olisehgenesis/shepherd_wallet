@@ -20,6 +20,8 @@ import {
   SENDER_STATE,
   STAKING_REGISTRY,
   UNSTAKE_DELAY,
+  OWNER_CALL_GAS,
+  OWNER_CALL_STATE,
   VERIFY_AGENT_GAS,
   VERIFY_OWNER_GAS,
 } from "./config.js";
@@ -142,7 +144,8 @@ export function grantCall(account: Address, key: Address, expiry: bigint, valueC
   return {
     to: account,
     data: encodeFunctionData({ abi: accountAbi, functionName: "grantSession", args: [key, expiry, valueCap] }),
-    state: 120_000n,
+    execution: OWNER_CALL_GAS,
+    state: OWNER_CALL_STATE,
   };
 }
 
@@ -150,7 +153,8 @@ export function revokeCall(account: Address, key: Address): Call {
   return {
     to: account,
     data: encodeFunctionData({ abi: accountAbi, functionName: "revokeSession", args: [key] }),
-    state: 80_000n,
+    execution: OWNER_CALL_GAS,
+    state: OWNER_CALL_STATE,
   };
 }
 
@@ -158,7 +162,8 @@ export function p256Call(account: Address, who: Address): Call {
   return {
     to: account,
     data: encodeFunctionData({ abi: accountAbi, functionName: "setP256Cosigner", args: [who] }),
-    state: 80_000n,
+    execution: OWNER_CALL_GAS,
+    state: OWNER_CALL_STATE,
   };
 }
 

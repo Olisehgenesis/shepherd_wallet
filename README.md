@@ -25,6 +25,7 @@ Prize fit: **Best use of the Frame Transaction Alternative Mempool** (one Ethere
 - `packages/core/` — frame codec, policy mirror, devnet client
 - `apps/web/` — ops dashboard
 - `apps/agent/` — `propose` → mirror → sign-within-policy
+- `apps/mcp/` — local MCP server. A session can spawn a child session. The child cannot outspend or outlive the parent, and no tool returns the owner key.
 - `RESEARCH.md` — sources and the decision record
 - `DEMO.md` — two-minute recording script
 
@@ -38,7 +39,10 @@ npm run build:contracts
 npm run test:contracts
 npm run demo
 npm run dev
+npm run test:scope
 ```
+
+`npm run mcp` speaks MCP over stdio. Cursor picks it up from `.cursor/mcp.json`. Tools: `shepherd_posture`, `shepherd_list_agents`, `shepherd_spawn_agent`, `shepherd_revoke_agent`, `shepherd_propose_intent`. Spawn hangs a new session under `root` or under another agent id, three levels deep. The value cap and the expiry are clipped to the parent. The owner key stays in the state file.
 
 `npm run demo` writes throwaway devnet keys to `.shepherd-state.json` (gitignored). It asks the public faucet once, deploys, grants a session, shows the canonical rejection, the unstaked alt rejection, stakes 0.012 ETH, admits an in-policy ping, rejects a drain, waits on a high-risk sweep, then admits that sweep with the owner as co-signer. The admitted line includes an explorer URL.
 
@@ -60,7 +64,7 @@ The dashboard (http://localhost:5173) repeats those steps with buttons. Chain re
 
 - External policy storage is what makes the alt mempool necessary. It also means the agent path cannot run until the account has staked, because an unstaked entity may not read that slot. Staking uses the owner path, which does not touch the policy.
 - Verify gas is set to 90,000 execution for the agent path so one secp256k1 signature (2,800) stays under the 100,000 unstaked budget. A P256 co-sign costs 6,700 more. If the devnet’s staked budget is only 100,000 and a trace blows the cap, lower the execution limit or drop the expiry frame.
-- Keyed nonces, a gas tank, and a Node Anon-RPC harness are not in this build. One session key is enough to show revoke, the cap, and the co-sign.
+- Keyed nonces, a gas tank, and a Node Anon-RPC harness are not in this build. Agents can spawn child sessions through the MCP server. The child is a tighter session, not a second owner.
 - High-risk detection is a flag in the policy contract, not a model score.
 
 ## Devnet

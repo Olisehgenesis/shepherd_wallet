@@ -22,3 +22,6 @@ export const VERIFY_OWNER_GAS = 70_000n;
 export const VERIFY_AGENT_GAS = 90_000n;
 export const SENDER_GAS = 120_000n;
 export const SENDER_STATE = 200_000n;
+/** Owner calls land on the account itself. 120k execution was consumed in full and wrote no state. */
+export const OWNER_CALL_GAS = 700_000n;
+export const OWNER_CALL_STATE = 400_000n;

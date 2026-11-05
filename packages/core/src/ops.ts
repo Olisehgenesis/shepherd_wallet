@@ -74,8 +74,14 @@ async function ownerFrame(account: Address, ownerKey: Hex, call: ReturnType<type
   }
 }
 
-export function grantSession(account: Address, ownerKey: Hex, session: Address, expiry: bigint): Promise<Outcome> {
-  return ownerFrame(account, ownerKey, grantCall(account, session, expiry, SESSION_VALUE_CAP));
+export function grantSession(
+  account: Address,
+  ownerKey: Hex,
+  session: Address,
+  expiry: bigint,
+  valueCap: bigint = SESSION_VALUE_CAP,
+): Promise<Outcome> {
+  return ownerFrame(account, ownerKey, grantCall(account, session, expiry, valueCap));
 }
 
 export function revoke(account: Address, ownerKey: Hex, session: Address): Promise<Outcome> {
