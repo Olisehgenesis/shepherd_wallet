@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Devnet keys. Never commit.
+.shepherd-state.json
+.env
+.env.*
+
+*.log
+.DS_Store
