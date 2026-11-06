@@ -5,7 +5,8 @@ const RULES = "shepherd.rules";
 const AGENTS = "shepherd.agents";
 const APPROVALS = "shepherd.approvals";
 const ACTIVITY = "shepherd.activity";
-const CONNECTED = "shepherd.sessionConnected";
+const REVEALED = "shepherd.keyRevealed";
+const AGENT_REVEALED = "shepherd.agentKeysRevealed";
 const SPENT = "shepherd.sessionSpent";
 
 export type RuleMode = 0 | 1 | 2;
@@ -136,12 +137,35 @@ export function appendActivity(account: Address, row: Omit<ActivityRow, "id" | "
   return list;
 }
 
-export function loadSessionConnected(): boolean {
-  return sessionStorage.getItem(CONNECTED) === "1";
+export function loadKeyRevealed(): string | null {
+  const value = sessionStorage.getItem(REVEALED);
+  return value && value.startsWith("0x") ? value.toLowerCase() : null;
 }
 
-export function markSessionConnected(connected: boolean) {
-  sessionStorage.setItem(CONNECTED, connected ? "1" : "0");
+export function markKeyRevealed(address: string) {
+  sessionStorage.setItem(REVEALED, address.toLowerCase());
+}
+
+export function clearKeyRevealed() {
+  sessionStorage.removeItem(REVEALED);
+}
+
+export function loadAgentRevealed(): string[] {
+  const rows = readJson<string[]>(AGENT_REVEALED, []);
+  return Array.isArray(rows) ? rows.filter((id) => typeof id === "string") : [];
+}
+
+export function markAgentRevealed(id: string) {
+  const next = Array.from(new Set([...loadAgentRevealed(), id]));
+  writeJson(AGENT_REVEALED, next);
+  return next;
+}
+
+export function forgetAgentRevealed(ids: string[]) {
+  const drop = new Set(ids);
+  const next = loadAgentRevealed().filter((id) => !drop.has(id));
+  writeJson(AGENT_REVEALED, next);
+  return next;
 }
 
 export function loadSpentWei(sessionAddress: string | null): bigint {

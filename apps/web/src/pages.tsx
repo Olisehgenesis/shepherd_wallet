@@ -354,20 +354,22 @@ export function Docs() {
             the receipt lands.
           </li>
           <li>
-            Open <Link to="/console/session">Session</Link>, set value cap and TTL, then issue a session key. Reveal it
-            only if another process on this machine needs it.
+            Open <Link to="/console/session">Session</Link>, set the value cap and the TTL, then issue a session key.
+            TTL is stored and shown; this account does not enforce it on-chain. Revoke is what stops the session. Reveal
+            the key once if another process needs it. The key stays in this tab until you revoke.
           </li>
           <li>
             Open <Link to="/console/policy">Policy</Link> to add allow / high-risk rules. Open{" "}
             <Link to="/console/agents">Agents</Link> to spawn or revoke child sessions.
           </li>
           <li>
-            Open <Link to="/console/mempool">Mempool</Link>, stake 0.012 ETH, then send the ping to the alt mempool. The
-            canonical send should be rejected for the storage read.
+            Open <Link to="/console/mempool">Mempool</Link>, stake 0.012 ETH, then review and send the ping to the alt
+            mempool. The canonical send should be rejected for the storage read.
           </li>
           <li>
-            Open <Link to="/console/intents">Intents</Link> for a custom call or the demo buttons. High-risk lands in{" "}
-            <Link to="/console/approvals">Approvals</Link>. History is on <Link to="/console/activity">Activity</Link>.
+            Open <Link to="/console/intents">Intents</Link>. Every send stops on a review step. Labeled demos for ping,
+            drain, and sweep stay on that page. High-risk calls land in <Link to="/console/approvals">Approvals</Link>{" "}
+            for a co-sign. History is on <Link to="/console/activity">Activity</Link>.
           </li>
           <li>
             Open <Link to="/console/reads">Reads</Link>. Balance and code go through the harness. If the harness fails,

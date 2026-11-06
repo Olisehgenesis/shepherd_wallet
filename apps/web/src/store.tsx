@@ -56,14 +56,18 @@ import { startAnon, type AnonSession } from "./anon";
 import {
   addSpentWei,
   appendActivity,
+  clearKeyRevealed,
   clearSpentWei,
+  forgetAgentRevealed,
   loadActivity,
+  loadAgentRevealed,
   loadAgents,
   loadApprovals,
+  loadKeyRevealed,
   loadRules,
-  loadSessionConnected,
   loadSpentWei,
-  markSessionConnected,
+  markAgentRevealed,
+  markKeyRevealed,
   saveAgents,
   saveApprovals,
   upsertRule,
@@ -201,7 +205,9 @@ interface Store {
   approvals: PendingApproval[];
   pendingApprovalCount: number;
   activity: ActivityRow[];
-  sessionConnected: boolean;
+  sessionPhase: "idle" | "granting" | "revoking";
+  keyRevealed: boolean;
+  revealedAgentIds: string[];
   maxDepth: number;
   maxChildren: number;
   connect: (uuid: string, name: string) => Promise<boolean>;
@@ -211,7 +217,7 @@ interface Store {
   ensureOwner: () => string;
   prepare: () => Promise<void>;
   issue: (limits?: SessionLimitsInput) => Promise<void>;
-  revokeSession: () => Promise<void>;
+  revokeSession: () => Promise<boolean>;
   registerCosigner: () => Promise<void>;
   revealSession: () => string | null;
   runIntent: (kind: IntentKind) => Promise<void>;
@@ -230,7 +236,7 @@ interface Store {
   removePolicyRule: (target: Address, selector: Hex) => Promise<void>;
   refreshPolicyRules: () => Promise<void>;
   spawnAgent: (input: SpawnInput) => Promise<string | null>;
-  revokeAgent: (agentId: string) => Promise<void>;
+  revokeAgent: (agentId: string) => Promise<boolean>;
   refreshAgents: () => Promise<void>;
   revealAgentKey: (agentId: string) => string | null;
   enqueueApproval: (input: Omit<PendingApproval, "id" | "createdAt" | "status">) => void;
@@ -239,7 +245,6 @@ interface Store {
   clearToast: () => void;
   exportOwnerKey: () => string | null;
   importOwnerKey: (hex: string) => void;
-  markAgentConnected: () => void;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -279,9 +284,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [lastTxUrl, setLastTxUrl] = useState<string | null>(null);
   const [policyRules, setPolicyRules] = useState<PolicyRuleRow[]>(() => loadRules(null));
   const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [approvals, setApprovals] = useState<PendingApproval[]>([]);
+  const [approvals, setApprovals] = useState<PendingApproval[]>(() => {
+    try {
+      const raw = sessionStorage.getItem(DEPLOY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as Deployed;
+      return parsed.account ? loadApprovals(parsed.account) : [];
+    } catch {
+      return [];
+    }
+  });
   const [activity, setActivity] = useState<ActivityRow[]>([]);
-  const [sessionConnected, setSessionConnected] = useState(() => loadSessionConnected());
+  const [sessionPhase, setSessionPhase] = useState<"idle" | "granting" | "revoking">("idle");
+  const [revealedSession, setRevealedSession] = useState<string | null>(() => loadKeyRevealed());
+  const [revealedAgents, setRevealedAgents] = useState<string[]>(() => loadAgentRevealed());
 
   const ownerAddress = ownerKey ? privateKeyToAccount(ownerKey).address : null;
   const sessionAddress = sessionKey ? privateKeyToAccount(sessionKey).address : null;
@@ -628,41 +644,96 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function issue(limits?: SessionLimitsInput) {
     if (!deployed || !ownerKey) return;
-    await work("Granting the session", async () => {
-      const key = sessionKey ?? generatePrivateKey();
-      sessionStorage.setItem(SESSION, key);
-      setSessionKey(key);
-      const ttl = limits?.ttlSeconds && limits.ttlSeconds > 0 ? limits.ttlSeconds : 86_400;
-      const expiry = BigInt(Math.floor(Date.now() / 1000) + ttl);
-      let valueCap = SESSION_VALUE_CAP;
-      if (limits?.valueCapEth?.trim()) {
-        valueCap = parseEther(limits.valueCapEth);
-        if (valueCap <= 0n) throw new Error("Value cap must be greater than zero.");
-      }
-      const address = privateKeyToAccount(key).address;
-      clearSpentWei(address);
-      const outcome = await grantSession(deployed.account, ownerKey, address, expiry, valueCap);
-      push("grantSession", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
-      if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
-      recordActivity("grantSession", "root", outcome);
-      if (outcome.verdict !== "admitted") throw new Error(`Grant ${outcome.verdict}: ${outcome.reason}`);
-      markSessionConnected(false);
-      setSessionConnected(false);
-      await refresh();
-    });
+    setSessionPhase("granting");
+    const settled: { current: Outcome | null } = { current: null };
+    try {
+      await work("Granting the session", async () => {
+        const key = sessionKey ?? generatePrivateKey();
+        sessionStorage.setItem(SESSION, key);
+        setSessionKey(key);
+        const ttl = limits?.ttlSeconds && limits.ttlSeconds > 0 ? limits.ttlSeconds : 86_400;
+        const expiry = BigInt(Math.floor(Date.now() / 1000) + ttl);
+        let valueCap = SESSION_VALUE_CAP;
+        if (limits?.valueCapEth?.trim()) {
+          valueCap = parseEther(limits.valueCapEth);
+          if (valueCap <= 0n) throw new Error("Value cap must be greater than zero.");
+        }
+        const address = privateKeyToAccount(key).address;
+        clearSpentWei(address);
+        const outcome = await grantSession(deployed.account, ownerKey, address, expiry, valueCap);
+        if (outcome.verdict !== "admitted") {
+          push("grantSession", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
+          if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
+          recordActivity("grantSession", "root", outcome);
+          throw new Error(`Grant ${outcome.verdict}: ${outcome.reason}`);
+        }
+        try {
+          await refresh();
+        } catch {
+          /* grant is in; the next refresh can refill balance */
+        }
+        setLive((current) =>
+          current
+            ? { ...current, active: true, expiry: Number(expiry), valueCapWei: valueCap.toString() }
+            : {
+                active: true,
+                staked: false,
+                balance: "0",
+                balanceRoute: "clear",
+                expiry: Number(expiry),
+                valueCapWei: valueCap.toString(),
+                spentWei: "0",
+              },
+        );
+        settled.current = outcome;
+      });
+    } finally {
+      setSessionPhase("idle");
+    }
+    const admitted = settled.current;
+    if (admitted) {
+      push("grantSession", "clear", `${admitted.verdict}:${admitted.reason}`, admitted.explorerUrl);
+      if (admitted.explorerUrl) setLastTxUrl(admitted.explorerUrl);
+      recordActivity("grantSession", "root", admitted);
+    }
   }
 
   async function revokeSession() {
-    if (!deployed || !ownerKey || !sessionKey) return;
-    await work("Revoking the session", async () => {
-      const outcome = await revoke(deployed.account, ownerKey, privateKeyToAccount(sessionKey).address);
-      push("revokeSession", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
-      if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
-      recordActivity("revokeSession", "root", outcome);
-      markSessionConnected(false);
-      setSessionConnected(false);
-      await refresh();
-    });
+    if (!deployed || !ownerKey || !sessionKey) return false;
+    const signingKey = sessionKey;
+    setSessionPhase("revoking");
+    const settled: { current: Outcome | null } = { current: null };
+    try {
+      await work("Revoking the session", async () => {
+        const outcome = await revoke(deployed.account, ownerKey, privateKeyToAccount(signingKey).address);
+        if (outcome.verdict !== "admitted") {
+          push("revokeSession", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
+          if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
+          recordActivity("revokeSession", "root", outcome);
+          throw new Error(`Revoke ${outcome.verdict}: ${outcome.reason}`);
+        }
+        sessionStorage.removeItem(SESSION);
+        clearKeyRevealed();
+        setSessionKey(null);
+        setRevealedSession(null);
+        try {
+          await refresh();
+        } catch {
+          /* revoke is in; local key is already gone */
+        }
+        setLive((current) => (current ? { ...current, active: false } : current));
+        settled.current = outcome;
+      });
+    } finally {
+      setSessionPhase("idle");
+    }
+    const admitted = settled.current;
+    if (!admitted) return false;
+    push("revokeSession", "clear", `${admitted.verdict}:${admitted.reason}`, admitted.explorerUrl);
+    if (admitted.explorerUrl) setLastTxUrl(admitted.explorerUrl);
+    recordActivity("revokeSession", "root", admitted);
+    notify("Session revoked. The session key was wiped from this tab.");
+    return true;
   }
 
   async function registerCosigner() {
@@ -678,16 +749,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   function revealSession() {
-    if (!sessionKey) return null;
-    markSessionConnected(true);
-    setSessionConnected(true);
-    notify("Session key revealed for a local agent process.");
+    if (!sessionKey || !sessionAddress) return null;
+    if (revealedSession === sessionAddress.toLowerCase()) return null;
+    markKeyRevealed(sessionAddress);
+    setRevealedSession(sessionAddress.toLowerCase());
+    notify("Key revealed. It stays in this tab until you revoke.");
     return sessionKey;
-  }
-
-  function markAgentConnected() {
-    markSessionConnected(true);
-    setSessionConnected(true);
   }
 
   async function runIntent(kind: IntentKind) {
@@ -706,8 +773,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       push(kind, "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
       if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
       recordActivity(kind, "root", outcome, call.value?.toString());
-      markSessionConnected(true);
-      setSessionConnected(true);
       if (kind === "sweep" && outcome.verdict === "waiting") {
         enqueueApproval({
           agentId: "root",
@@ -777,8 +842,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       push("custom", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
       if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
       recordActivity("custom", "root", outcome, preview.value.toString());
-      markSessionConnected(true);
-      setSessionConnected(true);
       if (outcome.verdict === "admitted" && preview.value > 0n && sessionAddress) {
         const spent = addSpentWei(sessionAddress, preview.value);
         setLive((current) => (current ? { ...current, spentWei: spent.toString() } : current));
@@ -978,8 +1041,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   async function revokeAgent(agentId: string) {
-    if (!deployed || !ownerKey) return;
-    await work("Revoking agent", async () => {
+    if (!deployed || !ownerKey) return false;
+    return work("Revoking agent", async () => {
       const local = loadAgents(deployed.account);
       const agent = local.find((row) => row.id === agentId);
       if (!agent) throw new Error(`No agent ${agentId}.`);
@@ -994,14 +1057,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next = local.filter((row) => !removed.has(row.id));
       saveAgents(deployed.account, next);
       setAgents(next);
-      notify(`Revoked ${cascade.length} agent session(s).`);
+      setRevealedAgents(forgetAgentRevealed(cascade.map((row) => row.id)));
+      notify(`Revoked ${cascade.length} agent session(s). Their keys were wiped from this tab.`);
     });
   }
 
   function revealAgentKey(agentId: string) {
     const agent = agents.find((row) => row.id === agentId);
     if (!agent) return null;
-    notify(`Child key for ${agentId} shown once in this tab.`);
+    if (revealedAgents.includes(agentId)) return null;
+    setRevealedAgents(markAgentRevealed(agentId));
+    notify(`Key revealed for ${agentId}. It stays in this tab until you revoke that agent.`);
     return agent.sessionKey;
   }
 
@@ -1107,7 +1173,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     approvals,
     pendingApprovalCount,
     activity,
-    sessionConnected,
+    sessionPhase,
+    keyRevealed: Boolean(sessionAddress && revealedSession === sessionAddress.toLowerCase()),
+    revealedAgentIds: revealedAgents,
     maxDepth: MAX_DEPTH,
     maxChildren: MAX_CHILDREN,
     connect,
@@ -1145,7 +1213,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     clearToast: () => setToast(""),
     exportOwnerKey,
     importOwnerKey,
-    markAgentConnected,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

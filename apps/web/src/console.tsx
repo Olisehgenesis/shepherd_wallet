@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { formatEther } from "viem";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ALLOW, HIGH } from "../../../packages/core/src/abi.js";
 import { CHAIN_ID, CHAIN_NAME } from "../../../packages/core/src/config.js";
+import { PING, SWEEP } from "../../../packages/core/src/mirror.js";
+import { ConfirmSheet, ReviewSheet } from "./confirm";
+import type { PendingApproval, RuleMode } from "./persistence";
+import {
+  approvalCopy,
+  customReview,
+  intentReview,
+  REVEAL_HIDDEN_NOTE,
+  REVEAL_VISIBLE_NOTE,
+  revokeAgentCopy,
+  revokeSessionCopy,
+  TTL_NOTE,
+  type ReviewCopy,
+  type SendKind,
+} from "./reviewCopy";
 import { useStore } from "./store";
-import type { RuleMode } from "./persistence";
 import { Empty, Loader, Mark, shortAddress } from "./ui";
 import { WalletModal } from "./WalletModal";
 
@@ -25,6 +39,13 @@ const nav = [
 ] as const;
 
 const WalletUi = createContext<{ openWallet: () => void } | null>(null);
+const SafetyUi = createContext<{ openApproval: (id: string) => void } | null>(null);
+
+function useSafetyUi() {
+  const value = useContext(SafetyUi);
+  if (!value) throw new Error("Safety UI is missing");
+  return value;
+}
 
 function useWalletUi() {
   const value = useContext(WalletUi);
@@ -47,6 +68,16 @@ function formatCap(wei: string | undefined) {
   }
 }
 
+function approvalCallLabel(row: PendingApproval, rules: { target: string; selector: string; label?: string }[]) {
+  const rule = rules.find(
+    (item) => item.selector.toLowerCase() === row.selector.toLowerCase() && item.target.toLowerCase() === row.target.toLowerCase(),
+  );
+  if (rule?.label) return rule.label;
+  if (row.selector.toLowerCase() === SWEEP.toLowerCase()) return "vault.sweep()";
+  if (row.selector.toLowerCase() === PING.toLowerCase()) return "vault.ping()";
+  return row.selector;
+}
+
 function formatExpiry(sec: number | string | undefined) {
   const value = typeof sec === "string" ? Number(sec) : sec;
   if (!value) return "—";
@@ -58,7 +89,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [walletOpen, setWalletOpen] = useState(false);
+  const [approvalId, setApprovalId] = useState<string | null>(null);
+  const seenApprovals = useRef<Set<string> | null>(null);
   const openWallet = useCallback(() => setWalletOpen(true), []);
+  const openApproval = useCallback((id: string) => setApprovalId(id), []);
   const closeWallet = useCallback(() => {
     setWalletOpen(false);
     if (location.pathname === "/console/wallet") navigate("/console", { replace: true });
@@ -69,13 +103,40 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
   }, [location.pathname]);
 
   useEffect(() => {
+    const pending = store.approvals.filter((row) => row.status === "pending");
+    if (seenApprovals.current === null) {
+      seenApprovals.current = new Set(pending.map((row) => row.id));
+      return;
+    }
+    const fresh = pending.find((row) => !seenApprovals.current?.has(row.id));
+    for (const row of pending) seenApprovals.current.add(row.id);
+    if (fresh) setApprovalId(fresh.id);
+  }, [store.approvals]);
+
+  useEffect(() => {
+    if (!approvalId || store.busy) return;
+    const still = store.approvals.some((row) => row.id === approvalId && row.status === "pending");
+    if (!still) setApprovalId(null);
+  }, [approvalId, store.approvals, store.busy]);
+
+  useEffect(() => {
     if (!store.toast) return;
     const id = window.setTimeout(() => store.clearToast(), 4200);
     return () => window.clearTimeout(id);
   }, [store.toast, store.clearToast]);
 
+  const pendingApproval = store.approvals.find((row) => row.id === approvalId && row.status === "pending") ?? null;
+  const approvalSheet = pendingApproval
+    ? approvalCopy({
+        agentId: pendingApproval.agentId,
+        callLabel: approvalCallLabel(pendingApproval, store.policyRules),
+        valueLabel: formatCap(pendingApproval.valueWei),
+      })
+    : null;
+
   return (
     <WalletUi.Provider value={{ openWallet }}>
+      <SafetyUi.Provider value={{ openApproval }}>
       <div className="shell">
         <aside className="side">
           <Link className="brand side-brand" to="/">
@@ -223,6 +284,30 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       <WalletModal open={walletOpen} onClose={closeWallet} />
+      <ConfirmSheet
+        open={Boolean(approvalSheet)}
+        kicker="Needs your co-sign"
+        kickerTone="risk"
+        title={approvalSheet?.title ?? ""}
+        body={approvalSheet?.body ?? ""}
+        rows={approvalSheet?.rows ?? []}
+        secondaryLabel="Decline"
+        confirmLabel="Approve"
+        busy={store.busy}
+        error={store.error}
+        onSecondary={() => {
+          if (!pendingApproval) return;
+          store.rejectPending(pendingApproval.id);
+        }}
+        onBackdrop={() => {
+          if (!store.busy) setApprovalId(null);
+        }}
+        onConfirm={() => {
+          if (!pendingApproval) return;
+          void store.approvePending(pendingApproval.id);
+        }}
+      />
+      </SafetyUi.Provider>
     </WalletUi.Provider>
   );
 }
@@ -307,10 +392,11 @@ export function WalletPage() {
 
 export function SessionPage() {
   const store = useStore();
-  const [shown, setShown] = useState(false);
   const [secret, setSecret] = useState("");
   const [capEth, setCapEth] = useState("0.001");
   const [ttl, setTtl] = useState("86400");
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const settling = store.sessionPhase !== "idle";
   if (!store.deployed) {
     return (
       <Empty
@@ -328,7 +414,7 @@ export function SessionPage() {
     <>
       <header className="page-head">
         <h1>Session</h1>
-        <p>Issue a key for the agent. Set the per-call value cap and TTL at grant time. Revoke clears it on-chain.</p>
+        <p>Issue a key for the agent. The value cap is enforced per call. {TTL_NOTE}</p>
       </header>
       <Card>
         <CardHeader>
@@ -336,9 +422,11 @@ export function SessionPage() {
         </CardHeader>
         <CardContent className="grid gap-3">
           <p className="lede" style={{ margin: 0 }}>
-            Status {store.live?.active ? "active" : "inactive"} · Connected {store.sessionConnected ? "yes (key handed off or used)" : "no"} · Cap{" "}
-            {formatCap(store.live?.valueCapWei)} · Expiry {formatExpiry(store.live?.expiry)} · Spent this session (local){" "}
-            {formatCap(store.live?.spentWei)}
+            {store.sessionPhase === "granting"
+              ? "Granting the session. Status updates when it is included."
+              : store.sessionPhase === "revoking"
+                ? "Revoking the session. It stops when the revoke is included."
+                : `${store.live?.active ? "Session active" : "No active session"} · ${store.keyRevealed ? "Key revealed" : "Key not revealed"} · Cap ${formatCap(store.live?.valueCapWei)} · Expiry ${formatExpiry(store.live?.expiry)} · Spent this session (local) ${formatCap(store.live?.spentWei)}`}
           </p>
           <p className="lede" style={{ margin: 0 }}>
             Cap is per call on-chain, not a cumulative budget. Spent is tracked locally from admitted agent values in this tab.{" "}
@@ -352,56 +440,89 @@ export function SessionPage() {
               <input value={capEth} onChange={(event) => setCapEth(event.target.value)} inputMode="decimal" />
             </label>
             <label className="field">
-              <span>TTL (seconds)</span>
-              <input value={ttl} onChange={(event) => setTtl(event.target.value)} inputMode="numeric" />
+              <span>TTL (seconds) — not enforced on-chain</span>
+              <input value={ttl} onChange={(event) => setTtl(event.target.value)} inputMode="numeric" disabled={store.busy} />
             </label>
           </div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>{store.live?.active ? "SESSION ACTIVE" : "NO ACTIVE SESSION"}</CardTitle>
+          <CardTitle>
+            {store.sessionPhase === "granting"
+              ? "GRANTING SESSION"
+              : store.sessionPhase === "revoking"
+                ? "REVOKING SESSION"
+                : store.live?.active
+                  ? "SESSION ACTIVE"
+                  : "NO ACTIVE SESSION"}
+          </CardTitle>
         </CardHeader>
         <CardContent className="grid gap-3">
-          <div className="row">
-            <Button
-              disabled={store.busy}
-              onClick={() =>
-                void store.issue({
-                  valueCapEth: capEth,
-                  ttlSeconds: Number(ttl) || 86_400,
-                })
-              }
-            >
-              {store.sessionReady ? "Grant again" : "Issue session key"}
-            </Button>
-            {store.sessionReady && (
-              <Button variant="danger" disabled={store.busy} onClick={() => void store.revokeSession()}>
-                Revoke
-              </Button>
-            )}
-            {store.sessionReady && (
+          {!settling && (
+            <div className="row">
               <Button
-                variant="ghost"
-                onClick={() => {
-                  const value = store.revealSession();
-                  if (!value) return;
-                  setSecret(value);
-                  setShown(true);
-                }}
+                disabled={store.busy}
+                onClick={() =>
+                  void store.issue({
+                    valueCapEth: capEth,
+                    ttlSeconds: Number(ttl) || 86_400,
+                  })
+                }
               >
-                Reveal session key once
+                {store.sessionReady ? "Grant again" : "Issue session key"}
               </Button>
-            )}
-          </div>
-          {shown && secret && (
+              {store.live?.active && store.sessionReady && (
+                <Button variant="danger" disabled={store.busy} onClick={() => setConfirmRevoke(true)}>
+                  Revoke
+                </Button>
+              )}
+              {store.live?.active && store.sessionReady && !store.keyRevealed && (
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    const value = store.revealSession();
+                    if (value) setSecret(value);
+                  }}
+                >
+                  Reveal session key once
+                </Button>
+              )}
+            </div>
+          )}
+          {secret && (
             <>
-              <p className="warn">Shown for a separate agent process. Close the tab when you are done.</p>
+              <p className="warn">{REVEAL_VISIBLE_NOTE}</p>
               <input readOnly value={secret} aria-label="Session key" />
             </>
           )}
+          {store.keyRevealed && !secret && <p className="lede" style={{ margin: 0 }}>{REVEAL_HIDDEN_NOTE}</p>}
         </CardContent>
       </Card>
+      <ConfirmSheet
+        open={confirmRevoke}
+        kicker="Stops the agent"
+        kickerTone="risk"
+        title={revokeSessionCopy().title}
+        body={revokeSessionCopy().body}
+        rows={revokeSessionCopy().rows}
+        secondaryLabel="Back"
+        confirmLabel="Revoke"
+        confirmTone="danger"
+        busy={store.busy || store.sessionPhase === "revoking"}
+        error={store.error}
+        onSecondary={() => {
+          if (!store.busy) setConfirmRevoke(false);
+        }}
+        onBackdrop={() => {
+          if (!store.busy) setConfirmRevoke(false);
+        }}
+        onConfirm={() => {
+          void store.revokeSession().then((ok) => {
+            if (ok) setConfirmRevoke(false);
+          });
+        }}
+      />
       <Card>
         <CardHeader>
           <CardTitle>P256 CO-SIGNER</CardTitle>
@@ -559,6 +680,7 @@ export function AgentsPage() {
   const [capEth, setCapEth] = useState("");
   const [ttl, setTtl] = useState("3600");
   const [revealed, setRevealed] = useState<{ id: string; key: string } | null>(null);
+  const [revokeId, setRevokeId] = useState<string | null>(null);
 
   const parents = useMemo(() => ["root", ...store.agents.map((agent) => agent.id)], [store.agents]);
 
@@ -619,7 +741,7 @@ export function AgentsPage() {
               <input value={capEth} onChange={(event) => setCapEth(event.target.value)} placeholder="inherit parent" inputMode="decimal" />
             </label>
             <label className="field">
-              <span>TTL seconds</span>
+              <span>TTL seconds — not enforced on-chain</span>
               <input value={ttl} onChange={(event) => setTtl(event.target.value)} inputMode="numeric" />
             </label>
             <Button
@@ -636,7 +758,7 @@ export function AgentsPage() {
             </Button>
           </div>
           <p className="lede" style={{ margin: 0 }}>
-            CLI/MCP docs stay at <Link to="/mcp">/mcp</Link>. This page is the live owner view.
+            {TTL_NOTE} CLI/MCP docs stay at <Link to="/mcp">/mcp</Link>. This page is the live owner view.
           </p>
         </CardContent>
       </Card>
@@ -686,17 +808,21 @@ export function AgentsPage() {
                   <td>{formatExpiry(agent.expiry)}</td>
                   <td>
                     <div className="row">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          const key = store.revealAgentKey(agent.id);
-                          if (key) setRevealed({ id: agent.id, key });
-                        }}
-                      >
-                        Reveal key
-                      </Button>
-                      <Button size="sm" variant="danger" disabled={store.busy} onClick={() => void store.revokeAgent(agent.id)}>
+                      {store.revealedAgentIds.includes(agent.id) ? (
+                        <span className="lede">Key revealed</span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const key = store.revealAgentKey(agent.id);
+                            if (key) setRevealed({ id: agent.id, key });
+                          }}
+                        >
+                          Reveal key once
+                        </Button>
+                      )}
+                      <Button size="sm" variant="danger" disabled={store.busy} onClick={() => setRevokeId(agent.id)}>
                         Revoke
                       </Button>
                     </div>
@@ -713,14 +839,39 @@ export function AgentsPage() {
             <CardTitle>KEY FOR {revealed.id.toUpperCase()}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-2">
-            <p className="warn">Copy into the child process. Not written to the ops log.</p>
+            <p className="warn">{REVEAL_VISIBLE_NOTE}</p>
             <input readOnly value={revealed.key} aria-label="Child session key" />
-            <Button variant="ghost" onClick={() => setRevealed(null)}>
-              Hide
-            </Button>
           </CardContent>
         </Card>
       )}
+      <ConfirmSheet
+        open={Boolean(revokeId)}
+        kicker="Stops the agent"
+        kickerTone="risk"
+        title={revokeId ? revokeAgentCopy(revokeId).title : ""}
+        body={revokeId ? revokeAgentCopy(revokeId).body : ""}
+        rows={revokeId ? revokeAgentCopy(revokeId).rows : []}
+        secondaryLabel="Back"
+        confirmLabel="Revoke"
+        confirmTone="danger"
+        busy={store.busy}
+        error={store.error}
+        onSecondary={() => {
+          if (!store.busy) setRevokeId(null);
+        }}
+        onBackdrop={() => {
+          if (!store.busy) setRevokeId(null);
+        }}
+        onConfirm={() => {
+          if (!revokeId) return;
+          void store.revokeAgent(revokeId).then((ok) => {
+            if (ok) {
+              setRevealed((current) => (current?.id === revokeId ? null : current));
+              setRevokeId(null);
+            }
+          });
+        }}
+      />
     </>
   );
 }
@@ -732,6 +883,43 @@ export function IntentsPage() {
   const [valueEth, setValueEth] = useState("0");
   const [calldata, setCalldata] = useState("0x");
   const [preview, setPreview] = useState<string>("");
+  const [checking, setChecking] = useState(false);
+  const [review, setReview] = useState<(ReviewCopy & { run: () => Promise<void> }) | null>(null);
+
+  function openSend(kind: SendKind) {
+    const copy = intentReview(kind);
+    setReview({ ...copy, run: () => store.runIntent(kind) });
+  }
+
+  async function openCustom(queueIfNeedsCosign: boolean) {
+    setChecking(true);
+    setPreview("");
+    try {
+      const result = await store.previewCustomCall({ target, selectorOrSig: selector, valueEth, calldata });
+      const copy = customReview({
+        selector,
+        target: shortAddress(target),
+        valueEth,
+        verdict: result.verdict,
+        queue: queueIfNeedsCosign,
+      });
+      setReview({
+        ...copy,
+        run: () =>
+          store.submitCustomCall({
+            target,
+            selectorOrSig: selector,
+            valueEth,
+            calldata,
+            queueIfNeedsCosign,
+          }),
+      });
+    } catch (reason) {
+      setPreview(reason instanceof Error ? reason.message : "Could not review that call.");
+    } finally {
+      setChecking(false);
+    }
+  }
 
   useEffect(() => {
     if (store.deployed?.vault && !target) setTarget(store.deployed.vault);
@@ -754,7 +942,7 @@ export function IntentsPage() {
     <>
       <header className="page-head">
         <h1>Intents</h1>
-        <p>Custom calls are the product path. Demo buttons stay for the prize walkthrough.</p>
+        <p>Review every call before it is sent. Nothing is submitted until you confirm.</p>
       </header>
       <Card>
         <CardHeader>
@@ -791,67 +979,67 @@ export function IntentsPage() {
             >
               Preview mirror
             </Button>
-            <Button
-              disabled={store.busy}
-              onClick={() =>
-                void store.submitCustomCall({
-                  target,
-                  selectorOrSig: selector,
-                  valueEth,
-                  calldata,
-                  queueIfNeedsCosign: true,
-                })
-              }
-            >
-              Submit (queue if high-risk)
+            <Button disabled={store.busy || checking} onClick={() => void openCustom(true)}>
+              Review
             </Button>
-            <Button
-              variant="ghost"
-              disabled={store.busy}
-              onClick={() =>
-                void store.submitCustomCall({
-                  target,
-                  selectorOrSig: selector,
-                  valueEth,
-                  calldata,
-                  queueIfNeedsCosign: false,
-                })
-              }
-            >
-              Submit with owner co-sign now
+            <Button variant="ghost" disabled={store.busy || checking} onClick={() => void openCustom(false)}>
+              Review with owner co-sign
             </Button>
           </div>
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>DEMO</CardTitle>
+          <CardTitle>LABELED DEMOS</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="grid gap-3">
+          <p className="lede" style={{ margin: 0 }}>
+            Demos only. Each one stops on a review step. Drain is meant to be rejected. High-risk sweep waits for your co-sign.
+          </p>
           <div className="row">
-            <Button disabled={store.busy} onClick={() => void store.runIntent("ping")}>
-              In-policy ping
+            <Button disabled={store.busy} onClick={() => openSend("ping")}>
+              Review demo: in-policy ping
             </Button>
-            <Button variant="ghost" disabled={store.busy} onClick={() => void store.runIntent("drain")}>
-              Submit injected drain
+            <Button variant="ghost" disabled={store.busy} onClick={() => openSend("drain")}>
+              Review demo: injected drain
             </Button>
-            <Button variant="ghost" disabled={store.busy} onClick={() => void store.runIntent("sweep")}>
-              High-risk, wait
+            <Button variant="ghost" disabled={store.busy} onClick={() => openSend("sweep")}>
+              Review demo: high-risk sweep
             </Button>
-            <Button disabled={store.busy} onClick={() => void store.runIntent("sweep-cosign")}>
-              Co-sign and send
+            <Button disabled={store.busy} onClick={() => openSend("sweep-cosign")}>
+              Review demo: co-sign sweep
             </Button>
           </div>
         </CardContent>
       </Card>
+      <ReviewSheet
+        copy={review}
+        busy={store.busy}
+        error={store.error}
+        onBack={() => {
+          if (!store.busy) setReview(null);
+        }}
+        onConfirm={() => {
+          if (!review) return;
+          void review.run().then(() => setReview(null));
+        }}
+      />
     </>
   );
 }
 
 export function ApprovalsPage() {
   const store = useStore();
+  const { openApproval } = useSafetyUi();
   const pending = store.approvals.filter((row) => row.status === "pending");
   const done = store.approvals.filter((row) => row.status !== "pending");
+  const opened = useRef(false);
+
+  useEffect(() => {
+    if (opened.current || !pending[0]) return;
+    opened.current = true;
+    openApproval(pending[0].id);
+  }, [pending, openApproval]);
 
   if (!store.deployed) {
     return (
@@ -871,8 +1059,17 @@ export function ApprovalsPage() {
     <>
       <header className="page-head">
         <h1>Approvals</h1>
-        <p>Inbox for NeedsCosign. Approve signs with the owner frame signer. Reject stops here — nothing is submitted.</p>
+        <p>Inbox for a high-risk call. Approve signs with the owner frame signer. Decline stops here — nothing is submitted.</p>
       </header>
+      {pending.length === 0 ? (
+        <Card>
+          <CardContent>
+            <p className="lede" style={{ margin: 0 }}>
+              Approvals appear when an agent proposes a high-risk call that needs your co-sign.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
       <Card>
         <CardHeader>
           <CardTitle>PENDING ({pending.length})</CardTitle>
@@ -890,31 +1087,21 @@ export function ApprovalsPage() {
               </tr>
             </thead>
             <tbody>
-              {pending.length === 0 && (
-                <tr>
-                  <td colSpan={6}>Empty. Use Intents → High-risk wait, or a custom high-risk rule.</td>
-                </tr>
-              )}
               {pending.map((row) => (
                 <tr key={row.id}>
                   <td>{new Date(row.createdAt).toLocaleTimeString()}</td>
-                  <td>{row.agentId}</td>
+                  <td>{row.agentId === "root" ? "Root agent" : row.agentId}</td>
                   <td>
                     <code>{shortAddress(row.target)}</code>
                   </td>
                   <td>
-                    <code>{row.selector}</code>
+                    <code>{approvalCallLabel(row, store.policyRules)}</code>
                   </td>
                   <td>{formatCap(row.valueWei)}</td>
                   <td>
-                    <div className="row">
-                      <Button size="sm" disabled={store.busy} onClick={() => void store.approvePending(row.id)}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="danger" disabled={store.busy} onClick={() => store.rejectPending(row.id)}>
-                        Reject
-                      </Button>
-                    </div>
+                    <Button size="sm" disabled={store.busy} onClick={() => openApproval(row.id)}>
+                      Review
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -922,6 +1109,7 @@ export function ApprovalsPage() {
           </table>
         </CardContent>
       </Card>
+      )}
       {done.length > 0 && (
         <Card>
           <CardHeader>
@@ -1066,6 +1254,7 @@ export function ReadsPage() {
 
 export function MempoolPage() {
   const store = useStore();
+  const [review, setReview] = useState<(ReviewCopy & { run: () => Promise<void> }) | null>(null);
   if (!store.deployed) {
     return (
       <Empty
@@ -1093,11 +1282,25 @@ export function MempoolPage() {
             </Button>
             {store.live?.active && (
               <>
-                <Button variant="ghost" disabled={store.busy} onClick={() => void store.runIntent("canonical")}>
-                  Send to canonical
+                <Button
+                  variant="ghost"
+                  disabled={store.busy}
+                  onClick={() => {
+                    const copy = intentReview("canonical");
+                    setReview({ ...copy, run: () => store.runIntent("canonical") });
+                  }}
+                >
+                  Review canonical send
                 </Button>
-                <Button variant="ghost" disabled={store.busy} onClick={() => void store.runIntent("alt")}>
-                  Send to alt
+                <Button
+                  variant="ghost"
+                  disabled={store.busy}
+                  onClick={() => {
+                    const copy = intentReview("alt");
+                    setReview({ ...copy, run: () => store.runIntent("alt") });
+                  }}
+                >
+                  Review alt send
                 </Button>
               </>
             )}
@@ -1105,6 +1308,18 @@ export function MempoolPage() {
           {!store.live?.active && <p className="lede" style={{ margin: 0 }}>Stake can run now. The ping waits for an active session.</p>}
         </CardContent>
       </Card>
+      <ReviewSheet
+        copy={review}
+        busy={store.busy}
+        error={store.error}
+        onBack={() => {
+          if (!store.busy) setReview(null);
+        }}
+        onConfirm={() => {
+          if (!review) return;
+          void review.run().then(() => setReview(null));
+        }}
+      />
     </>
   );
 }

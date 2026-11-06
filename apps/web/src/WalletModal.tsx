@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { formatEther, isAddress, type Address } from "viem";
 import { CHAIN_ID, CHAIN_NAME, ETHREX_URL, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
+import { ReviewSheet } from "./confirm";
+import { sendReview } from "./reviewCopy";
 import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
@@ -16,6 +18,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
   const [copied, setCopied] = useState("");
   const [importKey, setImportKey] = useState("");
   const [exportShown, setExportShown] = useState(false);
+  const [reviewSend, setReviewSend] = useState(false);
   const projectId = walletProjectId();
 
   useEffect(() => {
@@ -292,16 +295,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
               className="btn"
               type="button"
               disabled={store.busy || !isAddress(to) || !amount}
-              onClick={() =>
-                void store.sendEth(to as Address, amount).then((ok) => {
-                  if (ok) {
-                    setAmount("");
-                    setView("home");
-                  }
-                })
-              }
+              onClick={() => setReviewSend(true)}
             >
-              Review and send
+              Review
             </button>
           </div>
         </>
@@ -417,9 +413,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
               <div>
                 <strong>Session</strong>
                 <span>
-                  Agent path · {store.live?.active ? "active" : "inactive"}
+                  Agent path · {store.sessionPhase === "granting" ? "Granting session" : store.sessionPhase === "revoking" ? "Revoking session" : store.live?.active ? "Session active" : "No active session"}
                   {store.live?.valueCapWei ? ` · cap ${formatEther(BigInt(store.live.valueCapWei))} ETH` : ""}
-                  {store.sessionConnected ? " · connected" : ""}
+                  {store.keyRevealed ? " · Key revealed" : ""}
                 </span>
               </div>
               <code>{store.sessionAddress ?? "—"}</code>
@@ -525,6 +521,23 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         </>
       )}
+      <ReviewSheet
+        copy={reviewSend && isAddress(to) ? sendReview(to, amount) : null}
+        busy={store.busy}
+        error={store.error}
+        onBack={() => {
+          if (!store.busy) setReviewSend(false);
+        }}
+        onConfirm={() => {
+          void store.sendEth(to as Address, amount).then((ok) => {
+            if (ok) {
+              setReviewSend(false);
+              setAmount("");
+              setView("home");
+            }
+          });
+        }}
+      />
     </Modal>
   );
 }

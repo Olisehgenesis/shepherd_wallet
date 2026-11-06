@@ -909,3 +909,135 @@ button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visibl
   .hero-editorial { padding-top: 20px; }
   .hero-title { font-size: clamp(1.9rem, 9vw, 2.4rem); }
 }
+
+/* ——— Safety sheets (approvals, review, revoke) ——— */
+.safety-root {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  background: rgba(19, 36, 28, 0.45);
+}
+.safety-root.review {
+  align-items: center;
+  padding: 24px 16px;
+  background: rgba(244, 240, 230, 0.78);
+}
+.safety-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.safety-card {
+  position: relative;
+  width: min(440px, 100%);
+  background: #fffcf7;
+  color: #13241c;
+  border-radius: 20px 20px 0 0;
+  padding: 16px 20px 28px;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2);
+  max-height: min(92vh, 680px);
+  overflow: auto;
+}
+.safety-root.review .safety-card {
+  width: min(480px, 100%);
+  border-radius: 20px;
+  border: 1px solid #d9e0d8;
+  box-shadow: 0 16px 40px rgba(19, 36, 28, 0.12);
+}
+@media (min-width: 800px) {
+  .safety-root:not(.review) {
+    padding: 0 24px 10vh;
+  }
+  .safety-root:not(.review) .safety-card {
+    border-radius: 20px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.28);
+  }
+}
+.safety-grab {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d9e0d8;
+  margin: 4px auto 14px;
+}
+.safety-kicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7f74;
+}
+.safety-risk {
+  display: inline-flex;
+  margin: 0;
+  background: #f8e8e6;
+  color: #9b2c2c;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.safety-card h2 {
+  margin: 10px 0 6px;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #13241c;
+}
+.safety-body {
+  margin: 0;
+  color: #3d5248;
+  line-height: 1.45;
+}
+.safety-kv {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px 12px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.safety-kv > div { display: contents; }
+.safety-kv dt { margin: 0; color: #6b7f74; }
+.safety-kv dd { margin: 0; color: #13241c; }
+.safety-mono {
+  font-family: var(--mono);
+  font-size: 13px;
+  word-break: break-all;
+}
+.safety-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.safety-btn {
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-weight: 650;
+  border: 1px solid #13241c;
+  background: #fffcf7;
+  color: #13241c;
+  font: inherit;
+  font-weight: 650;
+}
+.safety-btn.primary {
+  background: #1f4d3a;
+  border-color: #1f4d3a;
+  color: #f7faf7;
+}
+.safety-btn.danger {
+  background: #9b2c2c;
+  border-color: #9b2c2c;
+  color: #fff;
+}
+.safety-btn:disabled { opacity: 0.45; cursor: default; }
+.safety-error {
+  margin: 0 0 12px;
+  color: #9b2c2c;
+  font-size: 14px;
+}
