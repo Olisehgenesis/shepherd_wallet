@@ -140,10 +140,10 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 type="button"
                 onClick={openWallet}
               >
-                {store.deployed
-                  ? `${store.live?.balance ?? store.portfolio?.accountEth ?? "0"} ETH · ${shortAddress(store.deployed.account)}`
-                  : store.wallet
-                    ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
+                {store.wallet
+                  ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
+                  : store.deployed
+                    ? `Account · ${shortAddress(store.deployed.account)}`
                     : "Connect wallet"}
               </button>
             </div>

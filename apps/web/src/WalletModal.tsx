@@ -133,19 +133,51 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
         <>
           <div className="wallet-hero">
             <p className="wallet-label">
-              {account ? "Shepherd account" : "Frame signer"} · {CHAIN_NAME}
+              {store.wallet ? `${store.wallet.name} (browser)` : account ? "Shepherd account" : "Frame signer"} · {CHAIN_NAME}
             </p>
-            <p className="wallet-balance">{store.portfolio?.accountEth ?? store.portfolio?.ownerEth ?? "0"} ETH</p>
+            <p className="wallet-balance">
+              {store.wallet
+                ? `${store.portfolio?.browserEth ?? "…"} ETH`
+                : `${store.portfolio?.accountEth ?? store.portfolio?.ownerEth ?? "0"} ETH`}
+            </p>
             <button
               className="wallet-address"
               type="button"
-              onClick={() => void copy("address", account ?? store.ownerAddress ?? "")}
-              disabled={!account && !store.ownerAddress}
+              onClick={() =>
+                void copy(
+                  "address",
+                  store.wallet?.address ?? account ?? store.ownerAddress ?? "",
+                )
+              }
+              disabled={!store.wallet && !account && !store.ownerAddress}
             >
-              {account ? shortAddress(account) : store.ownerAddress ? shortAddress(store.ownerAddress) : "No address yet"}
+              {store.wallet
+                ? shortAddress(store.wallet.address)
+                : account
+                  ? shortAddress(account)
+                  : store.ownerAddress
+                    ? shortAddress(store.ownerAddress)
+                    : "No address yet"}
               <span>{copied === "address" ? "Copied" : "Copy"}</span>
             </button>
           </div>
+          {store.wallet && (account || store.ownerAddress) && (
+            <div className="callout" role="status">
+              MetaMask is <code>{shortAddress(store.wallet.address)}</code> — deposits and identity only. The address that
+              owns the Shepherd account is the <strong>frame signer</strong> in this tab
+              {store.ownerAddress ? (
+                <>
+                  : <code>{shortAddress(store.ownerAddress)}</code>
+                </>
+              ) : null}
+              {account ? (
+                <>
+                  . Contract: <code>{shortAddress(account)}</code>
+                </>
+              ) : null}
+              . Open Signers for the full map.
+            </div>
+          )}
           {store.wallet && !store.walletOnDevnet && (
             <div className="callout bad" role="status">
               Browser wallet is on chain {store.wallet.chainId}.{" "}
@@ -172,16 +204,24 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
 
           <div className="wallet-stats">
             <div>
+              <span>Browser</span>
+              <strong>{store.wallet ? shortAddress(store.wallet.address) : "Not connected"}</strong>
+            </div>
+            <div>
+              <span>Frame signer</span>
+              <strong>{store.ownerAddress ? shortAddress(store.ownerAddress) : "—"}</strong>
+            </div>
+            <div>
+              <span>Account</span>
+              <strong>{account ? shortAddress(account) : "Not prepared"}</strong>
+            </div>
+            <div>
               <span>Session</span>
               <strong>{store.live?.active ? "Active" : "Inactive"}</strong>
             </div>
             <div>
               <span>Stake</span>
               <strong>{store.live?.staked ? "Present" : "Absent"}</strong>
-            </div>
-            <div>
-              <span>Browser</span>
-              <strong>{store.wallet ? shortAddress(store.wallet.address) : "Not connected"}</strong>
             </div>
           </div>
 
@@ -350,21 +390,28 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
 
       {view === "signers" && (
         <>
-          <p>Three keys, three jobs. The agent never receives the owner key.</p>
+          <p>Three keys, three jobs. Your MetaMask address is not the Shepherd owner — MetaMask cannot sign EIP-8141 frame digests.</p>
           <ul className="signer-list">
             <li>
               <div>
                 <strong>Browser wallet</strong>
-                <span>You · deposits and identity</span>
+                <span>You · deposits and identity · this is MetaMask</span>
               </div>
-              <code>{store.wallet ? shortAddress(store.wallet.address) : "—"}</code>
+              <code>{store.wallet ? store.wallet.address : "—"}</code>
             </li>
             <li>
               <div>
                 <strong>Frame signer (owner)</strong>
-                <span>Signs EIP-8141 digests in this tab</span>
+                <span>Signs EIP-8141 digests in this tab · not MetaMask</span>
               </div>
-              <code>{store.ownerAddress ? shortAddress(store.ownerAddress) : "—"}</code>
+              <code>{store.ownerAddress ?? "—"}</code>
+            </li>
+            <li>
+              <div>
+                <strong>Shepherd account</strong>
+                <span>On-chain contract after Prepare</span>
+              </div>
+              <code>{account ?? "—"}</code>
             </li>
             <li>
               <div>
@@ -375,14 +422,14 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                   {store.sessionConnected ? " · connected" : ""}
                 </span>
               </div>
-              <code>{store.sessionAddress ? shortAddress(store.sessionAddress) : "—"}</code>
+              <code>{store.sessionAddress ?? "—"}</code>
             </li>
             <li>
               <div>
                 <strong>P256 co-signer</strong>
                 <span>Second signature for high-risk</span>
               </div>
-              <code>{store.p256Address ? shortAddress(store.p256Address) : "—"}</code>
+              <code>{store.p256Address ?? "—"}</code>
             </li>
           </ul>
           <div className="row">
