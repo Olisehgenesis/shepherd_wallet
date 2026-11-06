@@ -16,6 +16,7 @@ import { legacyRedirects, paths } from "./shell/destinations";
 import { McpConsole } from "./shell/McpConsole";
 import { DemoHub, YouLayout, YouPage } from "./shell/YouPage";
 import { StoreProvider } from "./store";
+import { WalletPage } from "./WalletModal";
 
 export function App() {
   return (
@@ -29,7 +30,7 @@ export function App() {
           <Route path="/mcp" element={<McpPage />} />
           <Route path="/console" element={<AppShell />}>
             <Route index element={<Overview />} />
-            <Route path="wallet" element={<YouPage />} />
+            <Route path="wallet" element={<WalletPage />} />
             <Route path="mcp" element={<McpConsole />} />
             <Route path="agents" element={<AgentSection />}>
               <Route index element={<AgentsPage />} />

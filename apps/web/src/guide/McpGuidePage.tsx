@@ -21,7 +21,7 @@ const tools = [
 
 export function McpGuidePage() {
   return (
-    <GuideShell title="MCP" subtitle="Wallet guide" tabs={tabs}>
+    <GuideShell title="MCP" subtitle="Wallet guide" tabs={tabs} crossLinks>
       {(tab) => {
         if (tab === "overview") {
           return (

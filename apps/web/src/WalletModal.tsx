@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -16,24 +17,33 @@ import { CHAIN_ID, CHAIN_NAME, EXPLORER_URL } from "../../../packages/core/src/c
 import { useStore } from "./store";
 import { ReviewSheet } from "./confirm";
 import { sendReview } from "./reviewCopy";
-import { Mark, Modal, shortAddress } from "./ui";
+import { Mark, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
 import type { WalletSurface } from "./wallet-ui";
 
 export type WalletModalView = WalletSurface;
 type View = WalletSurface;
 
-export function WalletModal({
-  open,
-  onClose,
-  initialView = null,
-}: {
-  open: boolean;
-  onClose: () => void;
-  initialView?: View | null;
-}) {
+const VIEWS: readonly View[] = ["home", "send", "receive", "signers", "connect", "backup"];
+
+function parseView(raw: string | null, fallback: View): View {
+  if (raw && (VIEWS as readonly string[]).includes(raw)) return raw as View;
+  return fallback;
+}
+
+/** Full-page wallet surface at `/console/wallet`. */
+export function WalletPage() {
   const store = useStore();
-  const [view, setView] = useState<View>("home");
+  const [params, setParams] = useSearchParams();
+  const defaultView: View = store.wallet || store.ownerAddress || store.deployed ? "home" : "connect";
+  const view = parseView(params.get("view"), defaultView);
+
+  function setView(next: View) {
+    const nextParams = new URLSearchParams(params);
+    nextParams.set("view", next);
+    setParams(nextParams, { replace: true });
+  }
+
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [deposit, setDeposit] = useState("0.01");
@@ -44,13 +54,9 @@ export function WalletModal({
   const projectId = walletProjectId();
 
   useEffect(() => {
-    if (!open) return;
-    setView(initialView ?? (store.wallet || store.ownerAddress || store.deployed ? "home" : "connect"));
     setReviewSend(false);
     void store.refreshWallet();
-  }, [open, initialView]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!open) return null;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function copy(label: string, value: string) {
     await navigator.clipboard.writeText(value);
@@ -102,19 +108,25 @@ export function WalletModal({
 
   return (
     <>
-      <Modal
-        title={title}
-        onClose={onClose}
-        wide
-        back={showBack ? () => setView("home") : undefined}
-        icon={
-          view === "home" ? (
-            <span className="wallet-title-icon" aria-hidden="true">
-              <WalletIcon size={16} />
-            </span>
-          ) : undefined
-        }
-      >
+      <section className="wallet-page" aria-labelledby="wallet-page-title">
+        <header className="page-head wallet-page-head">
+          <div className="wallet-page-title-row">
+            {showBack ? (
+              <button className="wallet-icon-btn" type="button" onClick={() => setView("home")} aria-label="Back">
+                <BackChevron />
+              </button>
+            ) : (
+              <span className="wallet-title-icon" aria-hidden="true">
+                <WalletIcon size={16} />
+              </span>
+            )}
+            <div>
+              <h1 id="wallet-page-title">{title}</h1>
+              <p>Owner key, deposits, send and receive on the Shepherd account.</p>
+            </div>
+          </div>
+        </header>
+        <div className="wallet-page-body pixel-panel">
         {view === "connect" && (
           <div className="wallet-stack">
             <p className="wallet-lede">
@@ -604,7 +616,8 @@ export function WalletModal({
             </div>
           </div>
         )}
-      </Modal>
+        </div>
+      </section>
       <ReviewSheet
         copy={reviewSend && isAddress(to) ? sendReview(to as Address, amount) : null}
         busy={store.busy}
@@ -623,6 +636,22 @@ export function WalletModal({
         }}
       />
     </>
+  );
+}
+
+export function WalletModal(_props: {
+  open: boolean;
+  onClose: () => void;
+  initialView?: View | null;
+}) {
+  return <WalletPage />;
+}
+
+function BackChevron() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 

@@ -5,22 +5,22 @@ import { Site } from "./site";
 
 const capabilities = [
   {
-    label: "Private reads",
-    title: "Anon-RPC for browser RPC reads",
-    body: "Console eth_* reads go through the Anon-RPC harness so agent activity is not a cleartext side channel in the browser.",
-    href: paths.reads,
-  },
-  {
-    label: "Policy-controlled calls",
-    title: "Allow, reject, or require co-signing",
-    body: "VERIFY checks target, selector, and value against ShepherdPolicy. High-risk calls wait for a second signature.",
-    href: paths.intents,
-  },
-  {
-    label: "Verifiable execution",
-    title: "Canonical versus alt admission",
-    body: "The same storage read is rejected on the canonical mempool. After stake, the alt mempool can admit the frame.",
+    label: "External policy",
+    title: "VERIFY reads ShepherdPolicy",
+    body: "The agent path staticcalls an external allowlist for target, selector, and value. That storage read is why canonical rejects.",
     href: paths.mempool,
+  },
+  {
+    label: "Alt-mempool admit",
+    title: "Stake, then the same frame clears",
+    body: "Unstaked alt rejects the same read. After addStake, the alt mempool can admit. Owner path can stake while unstaked.",
+    href: paths.mempool,
+  },
+  {
+    label: "Scoped sessions",
+    title: "Allow, deny, or require co-sign",
+    body: "Agents hold a session key, not the owner key. High-risk calls wait for a second protocol signature.",
+    href: paths.intents,
   },
 ] as const;
 
@@ -48,27 +48,27 @@ const steps = [
   },
 ] as const;
 
-const privacyDoes = [
-  "Anon-RPC for browser eth_* reads in the web console",
-  "Policy-based verification of agent calls",
-  "Canonical versus alt mempool execution paths",
-  "Session permissions and co-signing for high-risk actions",
-  "Redacted ops logs: method, route, and verdict only",
+const productDoes = [
+  "EIP-8141 VERIFY allowlists target, selector, and value",
+  "External ShepherdPolicy so canonical rejects the storage read",
+  "Staked alt-mempool admission after addStake",
+  "Scoped session keys; revoke is the kill switch",
+  "High-risk calls need owner or registered P256 co-sign",
 ] as const;
 
-const privacyDoesNot = [
-  "Not a fully private RPC: the worker sees request bodies",
-  "Reference worker uses ordinary fetch and does not unlink IP",
-  "Frame submissions go clear to the mempool",
-  "MCP eth_* reads need the open console Anon bridge; frame submissions stay clear",
+const productDoesNot = [
+  "Not a smarter trading agent — it is a leash for an agent",
+  "Not a fully private RPC (Anon-RPC details live on /trust)",
   "Not safe against a malicious Anon-RPC worker",
+  "Not a production multisig; empty VERIFY can call anything",
+  "ShepherdVault.sweep is a high-risk demo selector, not a fund move",
 ] as const;
 
 const previewRows = [
-  ["vault.ping()", "alt", "admitted"],
-  ["value → unknown", "alt", "TargetDenied"],
+  ["vault.ping()", "canonical", "canonical-storage-read"],
+  ["vault.ping()", "alt unstaked", "unstaked-storage-read"],
+  ["vault.ping()", "alt staked", "admitted"],
   ["vault.sweep()", "alt", "NeedsCosign"],
-  ["eth_getBalance", "anon", "harness"],
 ] as const;
 
 export function Landing() {
@@ -78,17 +78,18 @@ export function Landing() {
         <div className="wrap hero-split">
           <div className="hero-copy">
             <p className="hero-brand">Shepherd</p>
-            <h1 className="hero-title">Privacy calls for you and your agent.</h1>
+            <h1 className="hero-title">A frame-transaction account for agents.</h1>
             <p className="hero-deck">
-              You keep the owner key. Agents get a scoped session: policy-checked spends, Anon-RPC reads, alt-mempool
-              admission.
+              The human keeps the owner key. The agent gets a separate, scoped session key. Spend only clears when an
+              EIP-8141 VERIFY frame says the target, selector, and value are in policy — in another contract, so the
+              canonical mempool rejects and a staked alt-mempool admits.
             </p>
             <div className="hero-actions">
               <Button asChild size="lg">
-                <Link to={paths.wallet}>Connect Wallet</Link>
+                <Link to={paths.mempool}>Open mempool demo</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/console">Open Console</Link>
+                <Link to="/how">How a frame is decided</Link>
               </Button>
             </div>
           </div>
@@ -109,11 +110,11 @@ export function Landing() {
         <div className="wrap">
           <div className="section-intro">
             <h2 id="capabilities-title" className="section-title">
-              Three promises. No fake scores.
+              Frame-native. External policy. Alt admit.
             </h2>
             <p className="section-sub">
-              Protect browser reads, enforce call policy, and show canonical reject versus alt admit, without inventing
-              privacy you do not have.
+              This is an EIP-8141 agent account on ERC-8421 alt-mempool rules — not a private-RPC demo. Anon-RPC is
+              supporting infrastructure; the prize path is stake-to-admit.
             </p>
           </div>
           <div className="capability-list">
@@ -133,10 +134,11 @@ export function Landing() {
           <div className="how-lead">
             <p className="mono-label">How Shepherd works</p>
             <h2 id="how-title" className="section-title">
-              From a wallet to an admitted call.
+              From owner key to alt admission.
             </h2>
             <p className="section-sub">
-              Three steps on the public alt-mempool workshop stack. The first admitted ping is the point of the console.
+              Prepare, grant a session, stake, then watch canonical reject → unstaked reject → admitted on the public
+              alt-mempool devnet.
             </p>
             <Button asChild variant="outline">
               <Link to="/how">Read the full path</Link>
@@ -160,20 +162,20 @@ export function Landing() {
       <section className="privacy-section" id="privacy" aria-labelledby="privacy-title">
         <div className="wrap">
           <div className="section-intro">
-            <p className="mono-label">Privacy architecture</p>
+            <p className="mono-label">Product boundary</p>
             <h2 id="privacy-title" className="section-title">
-              Honest about what is private, and what is not.
+              A leash for an agent. Not a private-RPC headline.
             </h2>
             <p className="section-sub">
-              Shepherd is privacy infrastructure for agent calls, not a fully private RPC service and not a key-custody
-              wallet product.
+              Prize fit is Best use of the Frame Transaction Alternative Mempool. Anon-RPC and CROPS live on the trust
+              and reads pages.
             </p>
           </div>
           <div className="privacy-split">
             <div className="privacy-panel">
               <h3>What Shepherd does</h3>
               <ul>
-                {privacyDoes.map((item) => (
+                {productDoes.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
@@ -181,7 +183,7 @@ export function Landing() {
             <div className="privacy-panel privacy-panel-limit">
               <h3>What it does not claim</h3>
               <ul>
-                {privacyDoesNot.map((item) => (
+                {productDoesNot.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
@@ -198,15 +200,15 @@ export function Landing() {
           <div className="console-copy">
             <p className="mono-label">Interactive console</p>
             <h2 id="console-title" className="section-title">
-              A real console, not a static mockup.
+              Canonical vs alt-mempool first.
             </h2>
             <p className="section-sub">
-              Connect a wallet, prepare the account, grant a session, and watch canonical rejection versus alt admission.
-              Ops entries store method, route, and verdict only.
+              Judges should open the mempool page: same VERIFY storage read, three verdicts in order. Then intents for
+              ping, drain, and co-signed sweep.
             </p>
             <div className="hero-actions">
               <Button asChild>
-                <Link to="/console">Open Console</Link>
+                <Link to={paths.mempool}>Open mempool</Link>
               </Button>
               <Button asChild variant="ghost">
                 <Link to="/docs">Read the docs</Link>
@@ -257,15 +259,15 @@ export function Landing() {
         <div className="wrap close-inner">
           <div>
             <p className="mono-label mono-label-on-dark">Shepherd</p>
-            <h2 className="section-title">Privacy calls for you and your agent.</h2>
-            <p>Open the console on the public alt-mempool devnet. No API key required for injected wallets.</p>
+            <h2 className="section-title">A frame-transaction account for agents.</h2>
+            <p>Start at /how, then /console/mempool on the public alt-mempool devnet (chain 1337).</p>
           </div>
           <div className="hero-actions">
             <Button asChild size="lg" className="close-primary">
-              <Link to={paths.wallet}>Connect Wallet</Link>
+              <Link to={paths.mempool}>Open mempool</Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="close-secondary">
-              <Link to="/console">Open Console</Link>
+              <Link to="/how">How it works</Link>
             </Button>
           </div>
         </div>

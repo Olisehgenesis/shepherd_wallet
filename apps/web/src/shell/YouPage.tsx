@@ -5,13 +5,12 @@ import { CHAIN_ID, CHAIN_NAME } from "../../../../packages/core/src/config.js";
 import { useStore } from "../store";
 import { shortAddress } from "../ui";
 import { paths } from "./destinations";
-import { useShell } from "./ShellContext";
 
 const demoTools = [
   {
     to: paths.mempool,
-    title: "Mempool",
-    body: "Stake the account, then compare a canonical rejection with alt admission.",
+    title: "Canonical vs alt-mempool",
+    body: "Three verdicts in order: canonical-storage-read → unstaked-storage-read → admitted after stake.",
   },
   {
     to: paths.reads,
@@ -41,7 +40,6 @@ export function YouLayout() {
 
 export function YouPage() {
   const store = useStore();
-  const { openWallet } = useShell();
   const account = store.deployed?.account;
 
   return (
@@ -61,11 +59,11 @@ export function YouPage() {
               account {account ? shortAddress(account) : "is not prepared"}.
             </p>
             <div className="row">
-              <Button type="button" onClick={() => openWallet()}>
-                {store.ownerAddress || store.wallet ? "Open wallet" : "Connect"}
+              <Button asChild>
+                <Link to={paths.wallet}>{store.ownerAddress || store.wallet ? "Open wallet" : "Connect"}</Link>
               </Button>
-              <Button type="button" variant="outline" onClick={() => openWallet("backup")}>
-                Back up owner key
+              <Button asChild variant="outline">
+                <Link to={`${paths.wallet}?view=backup`}>Back up owner key</Link>
               </Button>
               {!store.deployed && (
                 <Button type="button" disabled={store.busy} onClick={() => void store.prepare()}>
@@ -112,7 +110,7 @@ export function YouPage() {
         </CardHeader>
         <CardContent className="grid gap-3">
           <p className="lede" style={{ margin: 0 }}>
-            Mempool, Reads, and the prize drain/sweep path.
+            Canonical vs alt-mempool first, then Reads and Intents.
           </p>
           <Button asChild variant="outline">
             <Link to={paths.demo}>Open demo tools</Link>

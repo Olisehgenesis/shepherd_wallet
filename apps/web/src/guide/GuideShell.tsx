@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { paths } from "../shell/destinations";
 import { Site } from "../site";
 import "./guide.css";
@@ -10,18 +10,26 @@ export type GuideTab = {
   Icon: ComponentType<{ size?: number; className?: string }>;
 };
 
+const productNav = [
+  { to: "/how", label: "How it works" },
+  { to: "/docs", label: "Docs" },
+  { to: "/trust", label: "Privacy" },
+] as const;
+
 export function GuideShell({
   title,
   subtitle,
   tabs,
   initialTab,
+  crossLinks = false,
   children,
 }: {
   title: string;
   subtitle: string;
   tabs: readonly GuideTab[];
   initialTab?: string;
-  children: (tab: string) => ReactNode;
+  crossLinks?: boolean;
+  children: (tab: string, setTab: (id: string) => void) => ReactNode;
 }) {
   const [tab, setTab] = useState(initialTab ?? tabs[0]?.id ?? "");
 
@@ -38,6 +46,15 @@ export function GuideShell({
   return (
     <Site>
       <div className="guide">
+        {crossLinks && (
+          <div className="guide-product-nav wrap">
+            {productNav.map((item) => (
+              <NavLink key={item.to} to={item.to} className="guide-product-link">
+                {item.label}
+              </NavLink>
+            ))}
+          </div>
+        )}
         <div className="guide-shell">
           <aside className="guide-side" aria-label={`${title} menu`}>
             <div className="guide-side-head">
@@ -78,7 +95,7 @@ export function GuideShell({
                 </button>
               ))}
             </div>
-            {children(tab)}
+            {children(tab, select)}
           </div>
         </div>
       </div>

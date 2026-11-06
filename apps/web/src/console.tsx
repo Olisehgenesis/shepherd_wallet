@@ -638,11 +638,31 @@ export function MempoolPage() {
   return (
     <>
       <header className="page-head">
-        <h1>Mempool</h1>
-        <p>One policy read. Canonical rejects it. Alt rejects it while the account is unstaked, then can admit it after stake.</p>
+        <h1>Canonical vs alt-mempool</h1>
+        <p>
+          One VERIFY policy storage read. Walk the three verdicts in order: canonical reject, unstaked alt reject, then
+          admitted after stake.
+        </p>
       </header>
       <Card>
         <CardContent className="grid gap-3">
+          <ol className="mempool-verdicts" aria-label="Judge path">
+            <li>
+              <strong>1. Canonical</strong>
+              <code>canonical-storage-read</code>
+              <span>Same agent-path ping on the canonical mempool.</span>
+            </li>
+            <li>
+              <strong>2. Alt, unstaked</strong>
+              <code>unstaked-storage-read</code>
+              <span>Alt still rejects the external ShepherdPolicy slot.</span>
+            </li>
+            <li>
+              <strong>3. Alt, staked</strong>
+              <code>admitted</code>
+              <span>After addStake, the same frame can clear with an explorer link.</span>
+            </li>
+          </ol>
           <div className="row">
             <Button disabled={store.busy} onClick={() => void store.stakeAccount()}>
               Stake account
@@ -657,7 +677,7 @@ export function MempoolPage() {
                     setReview({ ...copy, run: () => store.runIntent("canonical") });
                   }}
                 >
-                  Review canonical send
+                  1 · Review canonical
                 </Button>
                 <Button
                   variant="ghost"
@@ -667,12 +687,16 @@ export function MempoolPage() {
                     setReview({ ...copy, run: () => store.runIntent("alt") });
                   }}
                 >
-                  Review alt send
+                  2–3 · Review alt
                 </Button>
               </>
             )}
           </div>
-          {!store.live?.active && <p className="lede" style={{ margin: 0 }}>Stake can run now. The ping waits for an active session.</p>}
+          {!store.live?.active && (
+            <p className="lede" style={{ margin: 0 }}>
+              Stake can run now (owner path). The ping waits for an active session.
+            </p>
+          )}
         </CardContent>
       </Card>
       <ReviewSheet
