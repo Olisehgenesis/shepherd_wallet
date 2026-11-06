@@ -5,9 +5,19 @@ import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
 
-type View = "home" | "send" | "receive" | "signers" | "connect" | "backup";
+export type WalletModalView = "home" | "send" | "receive" | "signers" | "connect" | "backup";
 
-export function WalletModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+type View = WalletModalView;
+
+export function WalletModal({
+  open,
+  onClose,
+  initialView,
+}: {
+  open: boolean;
+  onClose: () => void;
+  initialView?: WalletModalView;
+}) {
   const store = useStore();
   const [view, setView] = useState<View>("home");
   const [to, setTo] = useState("");
@@ -20,9 +30,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
 
   useEffect(() => {
     if (!open) return;
-    setView(store.wallet || store.ownerAddress || store.deployed ? "home" : "connect");
+    setView(initialView ?? (store.wallet || store.ownerAddress || store.deployed ? "home" : "connect"));
     void store.refreshWallet();
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, initialView]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null;
 

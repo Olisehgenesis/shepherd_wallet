@@ -4,26 +4,14 @@ import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { paths, primaryNav } from "./shell/destinations";
 import { Mark } from "./ui";
 
 const links = [
   ["/how", "How it works"],
   ["/trust", "Privacy"],
   ["/docs", "Documentation"],
-  ["/console", "Console"],
-] as const;
-
-const consoleLinks = [
-  ["/console", "Overview"],
-  ["/console/wallet", "Connect wallet"],
-  ["/console/session", "Session"],
-  ["/console/policy", "Policy"],
-  ["/console/agents", "Agents"],
-  ["/console/intents", "Intents"],
-  ["/console/approvals", "Approvals"],
-  ["/console/reads", "Reads"],
-  ["/console/mempool", "Mempool"],
-  ["/console/activity", "Activity"],
+  [paths.home, "Console"],
 ] as const;
 
 function NavItems({ onNavigate }: { onNavigate?: () => void }) {
@@ -57,7 +45,7 @@ export function Site({ children }: { children: React.ReactNode }) {
           <nav className="nav-desktop" aria-label="Site">
             <NavItems />
             <Button asChild size="sm" className="ml-2">
-              <Link to="/console/wallet">Connect Wallet</Link>
+              <Link to={paths.wallet}>Connect Wallet</Link>
             </Button>
           </nav>
 
@@ -78,13 +66,13 @@ export function Site({ children }: { children: React.ReactNode }) {
                 <NavItems onNavigate={close} />
                 <Separator className="my-2" />
                 <p className="nav-sheet-label">Console</p>
-                {consoleLinks.map(([to, label]) => (
-                  <Link key={to} to={to} onClick={close}>
-                    {label}
+                {primaryNav.map((item) => (
+                  <Link key={item.id} to={item.to} onClick={close}>
+                    {item.label}
                   </Link>
                 ))}
                 <Button asChild className="mt-3 w-full">
-                  <Link to="/console/wallet" onClick={close}>
+                  <Link to={paths.wallet} onClick={close}>
                     Connect Wallet
                   </Link>
                 </Button>
@@ -110,7 +98,7 @@ export function Site({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
             <Link to="/mcp">MCP</Link>
-            <Link to="/console/wallet">Connect Wallet</Link>
+            <Link to={paths.wallet}>Connect Wallet</Link>
           </nav>
           <p className="foot-note">
             No tracker. Anon-RPC covers browser <code>eth_*</code> reads — the worker can still see request bodies.

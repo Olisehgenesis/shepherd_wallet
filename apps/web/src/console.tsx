@@ -1,42 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { formatEther } from "viem";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { ALLOW, HIGH } from "../../../packages/core/src/abi.js";
-import { CHAIN_ID, CHAIN_NAME } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import type { RuleMode } from "./persistence";
-import { Empty, Loader, Mark, shortAddress } from "./ui";
-import { WalletModal } from "./WalletModal";
-
-const nav = [
-  ["/console", "Overview"],
-  ["/console/session", "Session"],
-  ["/console/policy", "Policy"],
-  ["/console/agents", "Agents"],
-  ["/console/intents", "Intents"],
-  ["/console/approvals", "Approvals"],
-  ["/console/reads", "Reads"],
-  ["/console/mempool", "Mempool"],
-  ["/console/activity", "Activity"],
-] as const;
-
-const WalletUi = createContext<{ openWallet: () => void } | null>(null);
-
-function useWalletUi() {
-  const value = useContext(WalletUi);
-  if (!value) throw new Error("Wallet UI is missing");
-  return value;
-}
-
-function tone(ok: boolean | undefined, wait = false): "ok" | "bad" | "wait" | "info" {
-  if (wait) return "wait";
-  if (ok === undefined) return "wait";
-  return ok ? "ok" : "bad";
-}
+import { paths } from "./shell/destinations";
+import { useWalletUi } from "./shell/ShellContext";
+import { Empty, shortAddress } from "./ui";
 
 function formatCap(wei: string | undefined) {
   if (!wei || wei === "0") return "0 ETH";
@@ -53,180 +25,6 @@ function formatExpiry(sec: number | string | undefined) {
   return new Date(value * 1000).toLocaleString();
 }
 
-export function ConsoleShell({ children }: { children: React.ReactNode }) {
-  const store = useStore();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [walletOpen, setWalletOpen] = useState(false);
-  const openWallet = useCallback(() => setWalletOpen(true), []);
-  const closeWallet = useCallback(() => {
-    setWalletOpen(false);
-    if (location.pathname === "/console/wallet") navigate("/console", { replace: true });
-  }, [location.pathname, navigate]);
-
-  useEffect(() => {
-    if (location.pathname === "/console/wallet") setWalletOpen(true);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!store.toast) return;
-    const id = window.setTimeout(() => store.clearToast(), 4200);
-    return () => window.clearTimeout(id);
-  }, [store.toast, store.clearToast]);
-
-  return (
-    <WalletUi.Provider value={{ openWallet }}>
-      <div className="shell">
-        <aside className="side">
-          <Link className="brand side-brand" to="/">
-            <Mark />
-            Shepherd
-          </Link>
-          <p className="side-kicker">CONSOLE</p>
-          <nav aria-label="Console">
-            {nav.map(([to, label]) => (
-              <NavLink key={to} to={to} end={to === "/console"}>
-                {label}
-                {to === "/console/approvals" && store.pendingApprovalCount > 0 ? ` (${store.pendingApprovalCount})` : ""}
-              </NavLink>
-            ))}
-            <button className="side-wallet" type="button" onClick={openWallet}>
-              Wallet
-            </button>
-          </nav>
-          <div className="side-foot">
-            <Separator />
-            <Link to="/docs">How to use</Link>
-            <Link to="/mcp">MCP docs</Link>
-            <Link to="/">Back to site</Link>
-          </div>
-        </aside>
-        <div className="main">
-          <header className="top">
-            <div className="chips">
-              <Badge variant="ok">
-                {CHAIN_NAME} · {CHAIN_ID}
-              </Badge>
-              <Badge variant={tone(store.ethrex?.ok, !store.ethrex)}>
-                {store.ethrex?.ok
-                  ? `ethrex live · #${store.ethrex.block}`
-                  : store.ethrex
-                    ? `ethrex stalled · ${store.ethrex.ageSec}s`
-                    : "ethrex…"}
-              </Badge>
-              <Badge variant={store.anonState === "ready" ? "ok" : store.anonState === "failed" ? "bad" : "wait"}>
-                {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
-              </Badge>
-              <Badge variant="info">{store.anonShare}% anon reads</Badge>
-              {store.pendingApprovalCount > 0 && (
-                <Badge variant="wait">
-                  <Link to="/console/approvals">{store.pendingApprovalCount} pending</Link>
-                </Badge>
-              )}
-              {store.wallet && (
-                <Badge variant={store.walletOnDevnet ? "ok" : "bad"}>
-                  {store.walletOnDevnet ? "Wallet on 1337" : `Wallet on ${store.wallet.chainId}`}
-                </Badge>
-              )}
-            </div>
-            <div className="row">
-              {store.wallet && !store.walletOnDevnet && (
-                <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
-                  Switch to {CHAIN_ID}
-                </Button>
-              )}
-              <button
-                className={store.deployed || store.wallet ? "wallet-chip connected" : "btn"}
-                type="button"
-                onClick={openWallet}
-              >
-                {store.wallet
-                  ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
-                  : store.deployed
-                    ? `Account · ${shortAddress(store.deployed.account)}`
-                    : "Connect wallet"}
-              </button>
-            </div>
-          </header>
-          {store.toast && (
-            <div className="callout toast" role="status">
-              {store.toast}
-              <Button size="sm" variant="ghost" onClick={() => store.clearToast()}>
-                Dismiss
-              </Button>
-            </div>
-          )}
-          {store.wallet && !store.walletOnDevnet && (
-            <div className="callout bad" role="status">
-              Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
-              <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
-                Switch network
-              </Button>
-            </div>
-          )}
-          {store.ethrex && !store.ethrex.ok && (
-            <div className="callout bad" role="status">
-              Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
-              <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
-                explorer
-              </a>
-              .
-            </div>
-          )}
-          {store.status && <Loader label={store.status} />}
-          {store.error && (
-            <div className="callout bad" role="alert">
-              {store.error}
-            </div>
-          )}
-          {children}
-          <Card>
-            <CardHeader>
-              <CardTitle>OPS LOG</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Method</th>
-                    <th>Route</th>
-                    <th>Verdict</th>
-                    <th>Link</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {store.logs.length === 0 && (
-                    <tr>
-                      <td colSpan={4}>No calls yet. The first one is the harness reading the chain id.</td>
-                    </tr>
-                  )}
-                  {store.logs.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.method}</td>
-                      <td>{row.route}</td>
-                      <td>{row.verdict}</td>
-                      <td>
-                        {row.explorerUrl ? (
-                          <a href={row.explorerUrl} target="_blank" rel="noreferrer">
-                            Explorer
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      <WalletModal open={walletOpen} onClose={closeWallet} />
-    </WalletUi.Provider>
-  );
-}
-
 export function Overview() {
   const store = useStore();
   const { openWallet } = useWalletUi();
@@ -235,15 +33,15 @@ export function Overview() {
     : !store.deployed
       ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare funds the frame signer from the shared genesis key, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
       : !store.live?.active
-        ? { kind: "link" as const, href: "/console/session", label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. Set the value cap and TTL on the Session page." }
+        ? { kind: "link" as const, href: paths.session, label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. Set the value cap and TTL with the agent." }
         : !store.live.staked
-          ? { kind: "link" as const, href: "/console/mempool", label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
-          : { kind: "link" as const, href: "/console/intents", label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. Edit policy or spawn child agents when you need more than the demo vault calls." };
+          ? { kind: "link" as const, href: paths.mempool, label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
+          : { kind: "link" as const, href: paths.intents, label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. Edit policy or spawn child agents when you need more than the demo vault calls." };
 
   return (
     <>
       <header className="page-head">
-        <h1>Overview</h1>
+        <h1>Home</h1>
         <p>Four steps. The console only offers the one you have not finished.</p>
       </header>
       <Card>
@@ -300,7 +98,7 @@ export function WalletPage() {
   return (
     <Empty
       title="Wallet opens as a popup"
-      body="Use the wallet button in the top bar for balance, send, receive, signers, and owner key export/import. Closing the dialog brings you back to Overview."
+      body="Use the account button for balance, send, receive, signers, and owner key export/import. Closing the dialog leaves you on You."
     />
   );
 }
@@ -315,10 +113,10 @@ export function SessionPage() {
     return (
       <Empty
         title="No account yet"
-        body="Prepare the account on Overview. A session is granted to that account, not to a placeholder."
+        body="Prepare the account on Home. A session is granted to that account, not to a placeholder."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />
@@ -342,7 +140,7 @@ export function SessionPage() {
           </p>
           <p className="lede" style={{ margin: 0 }}>
             Cap is per call on-chain, not a cumulative budget. Spent is tracked locally from admitted agent values in this tab.{" "}
-            <Link to="/console/policy">
+            <Link to={paths.policy}>
               Policy: {store.policyRules.length} rule{store.policyRules.length === 1 ? "" : "s"}
             </Link>
           </p>
@@ -439,7 +237,7 @@ export function PolicyPage() {
         body="Prepare the account first. Rules are written to ShepherdPolicy on-chain."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />
@@ -569,7 +367,7 @@ export function AgentsPage() {
         body="Prepare and issue a root session first. Child agents are clipped to the parent cap and expiry."
         action={
           <Button asChild>
-            <Link to="/console/session">Open Session</Link>
+            <Link to={paths.session}>Open Session</Link>
           </Button>
         }
       />
@@ -583,7 +381,7 @@ export function AgentsPage() {
         body="Spawn hangs a child under the root session (or another child). Issue a session first."
         action={
           <Button asChild>
-            <Link to="/console/session">Issue session</Link>
+            <Link to={paths.session}>Issue session</Link>
           </Button>
         }
       />
@@ -744,7 +542,7 @@ export function IntentsPage() {
         body="Intents are signed by the session key. Issue one first. The chain still re-checks the call."
         action={
           <Button asChild>
-            <Link to="/console/session">Issue a session</Link>
+            <Link to={paths.session}>Issue a session</Link>
           </Button>
         }
       />
@@ -860,7 +658,7 @@ export function ApprovalsPage() {
         body="Approvals appear when an agent proposes a high-risk call that needs your co-sign."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />
@@ -974,7 +772,7 @@ export function ActivityPage() {
         body="Admits, denies, grants, and approvals land here for this account in this browser."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />
@@ -1041,7 +839,7 @@ export function ReadsPage() {
         body="Prepare the account first. This page then asks the harness for balance and code."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />
@@ -1070,10 +868,10 @@ export function MempoolPage() {
     return (
       <Empty
         title="No account to stake"
-        body="Prepare the account on Overview. Stake is an owner-path frame, and the ping is an agent-path frame."
+        body="Prepare the account on Home. Stake is an owner-path frame, and the ping is an agent-path frame."
         action={
           <Button asChild>
-            <Link to="/console">Go to Overview</Link>
+            <Link to="/console">Go to Home</Link>
           </Button>
         }
       />

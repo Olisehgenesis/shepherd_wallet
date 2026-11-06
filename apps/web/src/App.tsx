@@ -2,17 +2,18 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import {
   ActivityPage,
   AgentsPage,
-  ApprovalsPage,
-  ConsoleShell,
   IntentsPage,
   MempoolPage,
   Overview,
   PolicyPage,
   ReadsPage,
   SessionPage,
-  WalletPage,
 } from "./console";
 import { Docs, How, Landing, McpPage, Trust } from "./pages";
+import { AgentPlaceholder, AgentSection } from "./shell/AgentSection";
+import { AppShell } from "./shell/AppShell";
+import { legacyRedirects } from "./shell/destinations";
+import { DemoHub, YouLayout, YouPage } from "./shell/YouPage";
 import { StoreProvider } from "./store";
 
 export function App() {
@@ -25,16 +26,28 @@ export function App() {
           <Route path="/docs" element={<Docs />} />
           <Route path="/trust" element={<Trust />} />
           <Route path="/mcp" element={<McpPage />} />
-          <Route path="/console" element={<ConsoleShell><Overview /></ConsoleShell>} />
-          <Route path="/console/wallet" element={<ConsoleShell><WalletPage /></ConsoleShell>} />
-          <Route path="/console/session" element={<ConsoleShell><SessionPage /></ConsoleShell>} />
-          <Route path="/console/policy" element={<ConsoleShell><PolicyPage /></ConsoleShell>} />
-          <Route path="/console/agents" element={<ConsoleShell><AgentsPage /></ConsoleShell>} />
-          <Route path="/console/intents" element={<ConsoleShell><IntentsPage /></ConsoleShell>} />
-          <Route path="/console/approvals" element={<ConsoleShell><ApprovalsPage /></ConsoleShell>} />
-          <Route path="/console/reads" element={<ConsoleShell><ReadsPage /></ConsoleShell>} />
-          <Route path="/console/mempool" element={<ConsoleShell><MempoolPage /></ConsoleShell>} />
-          <Route path="/console/activity" element={<ConsoleShell><ActivityPage /></ConsoleShell>} />
+          <Route path="/console" element={<AppShell />}>
+            <Route index element={<Overview />} />
+            <Route path="wallet" element={<YouPage />} />
+            <Route path="agents" element={<AgentSection />}>
+              <Route index element={<AgentsPage />} />
+              <Route path="session" element={<SessionPage />} />
+              <Route path="policy" element={<PolicyPage />} />
+              <Route path=":agentId/policy" element={<PolicyPage />} />
+              <Route path=":agentId" element={<AgentPlaceholder />} />
+            </Route>
+            <Route path="activity" element={<ActivityPage />} />
+            <Route path="you" element={<YouLayout />}>
+              <Route index element={<YouPage />} />
+              <Route path="demo" element={<DemoHub />} />
+              <Route path="demo/mempool" element={<MempoolPage />} />
+              <Route path="demo/reads" element={<ReadsPage />} />
+              <Route path="demo/intents" element={<IntentsPage />} />
+            </Route>
+          </Route>
+          {legacyRedirects.map((item) => (
+            <Route key={item.from} path={item.from} element={<Navigate to={item.to} replace />} />
+          ))}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </StoreProvider>

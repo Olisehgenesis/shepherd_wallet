@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { OrbitalPrivacy } from "@/components/OrbitalPrivacy";
 import { Button } from "@/components/ui/button";
+import { paths } from "./shell/destinations";
 import { Site } from "./site";
 
 const capabilities = [
@@ -8,19 +9,19 @@ const capabilities = [
     label: "Private reads",
     title: "Anon-RPC for browser RPC reads",
     body: "Console eth_* reads go through the Anon-RPC harness so agent activity is not a cleartext side channel in the browser.",
-    href: "/console/reads",
+    href: paths.reads,
   },
   {
     label: "Policy-controlled calls",
     title: "Allow, reject, or require co-signing",
     body: "VERIFY checks target, selector, and value against ShepherdPolicy. High-risk calls wait for a second signature.",
-    href: "/console/intents",
+    href: paths.intents,
   },
   {
     label: "Verifiable execution",
     title: "Canonical versus alt admission",
     body: "The same storage read is rejected on the canonical mempool. After stake, the alt mempool can admit the frame.",
-    href: "/console/mempool",
+    href: paths.mempool,
   },
 ] as const;
 
@@ -29,21 +30,21 @@ const steps = [
     n: "01",
     title: "Connect and prepare",
     body: "Connect a wallet for identity. Shepherd funds a frame signer in this tab, then deploys the policy, vault, and account on the public alt-mempool devnet.",
-    href: "/console/wallet",
+    href: paths.wallet,
     link: "Connect Wallet",
   },
   {
     n: "02",
     title: "Grant a scoped session",
     body: "Issue a session key that is not the owner. Revoke clears it on-chain. Child agents spawned over MCP cannot outspend or outlive the parent.",
-    href: "/console/session",
+    href: paths.session,
     link: "Open Session",
   },
   {
     n: "03",
     title: "Submit under policy",
     body: "Stake the account, then send an in-policy call on the alt mempool. A drain is rejected by VERIFY. Sweep waits until you co-sign.",
-    href: "/console/mempool",
+    href: paths.mempool,
     link: "Open Mempool",
   },
 ] as const;
@@ -85,7 +86,7 @@ export function Landing() {
             </p>
             <div className="hero-actions">
               <Button asChild size="lg">
-                <Link to="/console/wallet">Connect Wallet</Link>
+                <Link to={paths.wallet}>Connect Wallet</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link to="/console">Explore the Console</Link>
@@ -214,11 +215,10 @@ export function Landing() {
             </div>
             <div className="console-panel-body">
               <div className="console-nav">
-                <span className="is-active">Overview</span>
-                <span>Session</span>
-                <span>Intents</span>
-                <span>Reads</span>
-                <span>Mempool</span>
+                <span className="is-active">Home</span>
+                <span>Agents</span>
+                <span>Activity</span>
+                <span>You</span>
               </div>
               <table>
                 <thead>
@@ -257,7 +257,7 @@ export function Landing() {
           </div>
           <div className="hero-actions">
             <Button asChild size="lg" variant="outline" className="close-primary">
-              <Link to="/console/wallet">Connect Wallet</Link>
+              <Link to={paths.wallet}>Connect Wallet</Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="close-secondary">
               <Link to="/console">Explore the Console</Link>
@@ -344,34 +344,35 @@ export function Docs() {
         <h2>In the console</h2>
         <ol>
           <li>
-            Open the console and use <Link to="/console/wallet">Connect wallet</Link>. Any EIP-6963 wallet can appear.
-            WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>. Export/import the frame signer from Wallet →
+            Open the console and use <Link to={paths.wallet}>Connect wallet</Link>. Any EIP-6963 wallet can appear.
+            WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>. Export/import the frame signer from You →
             Backup.
           </li>
           <li>
-            Open <Link to="/console">Overview</Link> and choose Prepare the account. Shepherd funds the frame signer from
+            Open <Link to={paths.home}>Home</Link> and choose Prepare the account. Shepherd funds the frame signer from
             the shared genesis key, then the three contracts deploy. This can take a minute. The loader stays up until
             the receipt lands.
           </li>
           <li>
-            Open <Link to="/console/session">Session</Link>, set value cap and TTL, then issue a session key. Reveal it
-            only if another process on this machine needs it.
+            Open <Link to={paths.session}>Agents → Session</Link>, set value cap and TTL, then issue a session key.
+            Reveal it only if another process on this machine needs it.
           </li>
           <li>
-            Open <Link to="/console/policy">Policy</Link> to add allow / high-risk rules. Open{" "}
-            <Link to="/console/agents">Agents</Link> to spawn or revoke child sessions.
+            Open <Link to={paths.policy}>Policy</Link> inside an agent to add allow / high-risk rules. Open{" "}
+            <Link to={paths.agents}>Agents</Link> to spawn or revoke child sessions.
           </li>
           <li>
-            Open <Link to="/console/mempool">Mempool</Link>, stake 0.012 ETH, then send the ping to the alt mempool. The
-            canonical send should be rejected for the storage read.
+            Open <Link to={paths.mempool}>You → Demo → Mempool</Link>, stake 0.012 ETH, then send the ping to the alt
+            mempool. The canonical send should be rejected for the storage read.
           </li>
           <li>
-            Open <Link to="/console/intents">Intents</Link> for a custom call or the demo buttons. High-risk lands in{" "}
-            <Link to="/console/approvals">Approvals</Link>. History is on <Link to="/console/activity">Activity</Link>.
+            Open <Link to={paths.intents}>You → Demo → Intents</Link> for a custom call or the demo buttons. High-risk
+            opens the <Link to={paths.approvals}>co-sign queue</Link>. History is on{" "}
+            <Link to={paths.activity}>Activity</Link>.
           </li>
           <li>
-            Open <Link to="/console/reads">Reads</Link>. Balance and code go through the harness. If the harness fails,
-            that page does not fall back to a clear provider.
+            Open <Link to={paths.reads}>You → Demo → Reads</Link>. Balance and code go through the harness. If the
+            harness fails, that page does not fall back to a clear provider.
           </li>
         </ol>
         <h2>What you should see</h2>
@@ -473,7 +474,7 @@ export function McpPage() {
             </p>
             <p>
               For a live owner UI (list / spawn / revoke children in the browser), open{" "}
-              <Link to="/console/agents">Console → Agents</Link>.
+              <Link to={paths.agents}>Console → Agents</Link>.
             </p>
           </div>
         </div>
