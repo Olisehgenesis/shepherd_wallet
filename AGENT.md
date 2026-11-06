@@ -19,7 +19,7 @@ Human (owner key / browser wallet)
                  └─ alt, after stake  → can admit
 ```
 
-**Anon-RPC** is for **browser `eth_*` reads** in the web console. Frame submissions always go clear to the mempool. The Node CLI / MCP path does **not** use Anon-RPC today.
+**Anon-RPC** covers **browser `eth_*` reads** in the web console, and **MCP eth_* reads** when that console is open: a localhost bridge (`127.0.0.1:17814`) relays agent reads into the harness. Frame submissions always go clear to the mempool. The Node CLI demo path stays clear unless you opt into the bridge.
 
 ## Keys (never confuse these)
 
@@ -39,6 +39,7 @@ No tool may return the owner key. Revoke is the kill switch (not wall-clock expi
 | `contracts/` | `ShepherdAccount`, `ShepherdPolicy`, `ShepherdVault` |
 | `packages/core/` | Frame codec, mirror, chain client, ops (`grant`, `stake`, `agentAct`) |
 | `apps/web/` | Vite + React console + marketing site |
+| `apps/ext/` | Shepherd Wallet browser extension (WXT) |
 | `apps/agent/` | CLI: `demo`, `propose` |
 | `apps/mcp/` | Local MCP: spawn / revoke / propose |
 | `.shepherd-state.json` | Throwaway keys + deployed addresses (gitignored) |
@@ -78,13 +79,14 @@ Prereq: `npm run demo` once so `.shepherd-state.json` has an account + root sess
 
 | Tool | Purpose |
 | --- | --- |
-| `shepherd_posture` | Root session active? Account staked? |
+| `shepherd_anon_status` | Is the console harness serving Anon reads to MCP? |
+| `shepherd_posture` | Root session active? Account staked? (reads via Anon bridge when connected) |
 | `shepherd_list_agents` | Spawned children (no owner key) |
 | `shepherd_spawn_agent` | New session under `root` or a parent id; returns child `sessionKey` once |
 | `shepherd_revoke_agent` | Revoke one child and descendants |
 | `shepherd_propose_intent` | `ping` sign+submit if mirror allows; `drain` refuse; `sweep` NeedsCosign without co-signing |
 
-Spawn rules: depth ≤ 3, eight children per parent, valueCap/expiry clipped to parent.
+Prereq for private MCP reads: `npm run dev` with `/console` open. Spawn rules: depth ≤ 3, eight children per parent, valueCap/expiry clipped to parent.
 
 ## Commands
 

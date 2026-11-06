@@ -33,6 +33,8 @@ export const ENTRY_POINT = "0x00000000000000000000000000000000000000aa" as const
 /** Reference worker specifier on mainnet. Ordinary fetch, not an anonymizing network. */
 export const ANON_SPECIFIER = "0x4fd77be300f31c5fe6ab266d35d27750a3478d27" as const;
 export const ANON_BOOTSTRAP_RPC = "https://ethereum.publicnode.com";
+/** Loopback bridge: MCP eth_* reads → open console harness. Submissions stay clear. */
+export const ANON_BRIDGE_PORT = 17814;
 
 export const LEGACY_GAS_PRICE = 2_000_000n;
 export const LEGACY_GAS = 8_000_000n;

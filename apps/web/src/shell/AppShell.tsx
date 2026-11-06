@@ -1,7 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
+import { ChevronDown, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { CHAIN_ID, CHAIN_NAME } from "../../../../packages/core/src/config.js";
 import { registerApprovalsOpener } from "../extensions";
 import { FirstRun } from "../onboarding";
@@ -10,7 +18,7 @@ import { Loader, Mark, shortAddress } from "../ui";
 import { WalletModal, type WalletModalView } from "../WalletModal";
 import { WalletUiProvider } from "../wallet-ui";
 import { ApprovalsQueue } from "./ApprovalsQueue";
-import { paths, primaryNav } from "./destinations";
+import { agentsMenu, paths } from "./destinations";
 import { ShellProvider } from "./ShellContext";
 
 export function AppShell() {
@@ -28,7 +36,7 @@ export function AppShell() {
   const closeWallet = useCallback(() => {
     setWalletOpen(false);
     setWalletView(undefined);
-    if (location.pathname === paths.wallet) navigate(paths.you, { replace: true });
+    if (location.pathname === paths.wallet) navigate(paths.agents, { replace: true });
   }, [location.pathname, navigate]);
 
   const openApprovals = useCallback(() => {
@@ -51,42 +59,104 @@ export function AppShell() {
 
   if (!store.ownerAddress) return <FirstRun />;
 
-  const accountLabel = store.deployed
-    ? `Account ${shortAddress(store.deployed.account)}`
-    : store.wallet
-      ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
-      : store.ownerAddress
-        ? `Owner · ${shortAddress(store.ownerAddress)}`
-        : "Create owner key";
+  const agentsActive = location.pathname.startsWith("/console/agents");
+  const walletActive = location.pathname === paths.wallet || location.pathname.startsWith("/console/you");
 
   return (
     <ShellProvider value={{ openWallet, openApprovals }}>
       <WalletUiProvider value={{ openWallet }}>
         <div className="shell">
-          <aside className="side">
-            <Link className="brand side-brand" to={paths.home}>
-              <Mark />
-              Shepherd
-            </Link>
-            <nav aria-label="Primary">
-              <PrimaryLinks pathname={location.pathname} />
-            </nav>
-            <p className="side-note">Demo tools (Mempool, Reads) live under You → Demo.</p>
-          </aside>
-          <div className="main">
-            <header className="shell-top">
-              <Badge variant="ok">Alt mempool · {CHAIN_ID}</Badge>
-              <div className="row">
+          <header className="console-nav">
+            <div className="console-nav-inner">
+              <Link className="brand console-nav-brand" to={paths.home}>
+                <Mark />
+                Shepherd Wallet
+              </Link>
+
+              <nav className="console-nav-desktop" aria-label="Primary">
+                <NavDropdown label="Agents" active={agentsActive} items={agentsMenu} menuLabel="Agents" />
+
+                <NavLink
+                  to={paths.mcp}
+                  end
+                  className={({ isActive }) => `console-nav-link${isActive ? " is-active" : ""}`}
+                >
+                  MCP
+                </NavLink>
+
+                <NavLink
+                  to={paths.wallet}
+                  end
+                  className={() => `console-nav-link${walletActive ? " is-active" : ""}`}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    openWallet();
+                    if (location.pathname !== paths.wallet) navigate(paths.wallet);
+                  }}
+                >
+                  Wallet
+                </NavLink>
+              </nav>
+
+              <div className="console-nav-actions">
+                <span className="console-nav-net" title={`${CHAIN_NAME} · ${CHAIN_ID}`}>
+                  <span className="console-nav-net-dot" aria-hidden="true" />
+                  Alt mempool · {CHAIN_ID}
+                </span>
                 {store.pendingApprovalCount > 0 && (
                   <button className="queue-chip" type="button" onClick={openApprovals}>
                     {store.pendingApprovalCount} waiting
                   </button>
                 )}
                 <button className="wallet-chip" type="button" onClick={() => openWallet()}>
-                  {accountLabel}
+                  {store.deployed
+                    ? shortAddress(store.deployed.account)
+                    : store.wallet
+                      ? shortAddress(store.wallet.address)
+                      : store.ownerAddress
+                        ? shortAddress(store.ownerAddress)
+                        : "Wallet"}
                 </button>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="console-nav-mobile-trigger" aria-label="Open menu">
+                      <Menu className="size-4" />
+                      Menu
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="console-nav-menu w-[min(20rem,calc(100vw-2rem))]">
+                    <DropdownMenuLabel>Agents</DropdownMenuLabel>
+                    {agentsMenu.map((item) => (
+                      <DropdownMenuItem key={item.to} onSelect={() => navigate(item.to)}>
+                        <MenuItemLabel label={item.label} description={item.description} />
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => navigate(paths.mcp)}>MCP</DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() => {
+                        openWallet();
+                        navigate(paths.wallet);
+                      }}
+                    >
+                      Wallet
+                    </DropdownMenuItem>
+                    {store.pendingApprovalCount > 0 && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={openApprovals}>
+                          {store.pendingApprovalCount} waiting for co-sign
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </header>
+            </div>
+          </header>
+
+          <div className="main">
             {store.toast && (
               <div className="callout toast" role="status">
                 {store.toast}
@@ -120,7 +190,7 @@ export function AppShell() {
               </div>
             )}
             <Outlet />
-            {location.pathname !== paths.home && (
+            {location.pathname !== paths.home && location.pathname !== paths.mcp && (
               <details className="ops-log">
                 <summary>
                   Ops log <span>{store.logs.length}</span>
@@ -131,9 +201,6 @@ export function AppShell() {
               </details>
             )}
           </div>
-          <nav className="mobile-tabs" aria-label="Primary">
-            <PrimaryLinks pathname={location.pathname} />
-          </nav>
         </div>
         <WalletModal open={walletOpen} onClose={closeWallet} initialView={walletView} />
         <ApprovalsQueue />
@@ -142,23 +209,44 @@ export function AppShell() {
   );
 }
 
-function PrimaryLinks({ pathname }: { pathname: string }) {
+function MenuItemLabel({ label, description }: { label: string; description: string }) {
   return (
-    <>
-      {primaryNav.map((item) => {
-        const walletYou = item.id === "you" && pathname === paths.wallet;
-        return (
-          <NavLink
-            key={item.id}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) => (isActive || walletYou ? "is-active" : undefined)}
-            {...(walletYou ? { "aria-current": "page" as const } : {})}
-          >
-            {item.label}
-          </NavLink>
-        );
-      })}
-    </>
+    <span className="console-nav-item">
+      <span className="console-nav-item-label">{label}</span>
+      <span className="console-nav-item-desc">{description}</span>
+    </span>
+  );
+}
+
+function NavDropdown({
+  label,
+  active,
+  items,
+  menuLabel,
+}: {
+  label: string;
+  active: boolean;
+  items: readonly { to: string; label: string; description: string }[];
+  menuLabel: string;
+}) {
+  const navigate = useNavigate();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className={`console-nav-link console-nav-trigger${active ? " is-active" : ""}`}>
+          {label}
+          <ChevronDown className="size-3.5 opacity-70" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="console-nav-menu">
+        <DropdownMenuLabel>{menuLabel}</DropdownMenuLabel>
+        {items.map((item) => (
+          <DropdownMenuItem key={item.to} onSelect={() => navigate(item.to)}>
+            <MenuItemLabel label={item.label} description={item.description} />
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

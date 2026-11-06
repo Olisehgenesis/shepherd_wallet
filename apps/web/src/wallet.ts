@@ -13,6 +13,8 @@ export interface WalletChoice {
   uuid: string;
   name: string;
   rdns: string;
+  /** EIP-6963 icon URL when the extension provides one. */
+  icon?: string;
 }
 
 export interface ConnectedWallet {
@@ -161,8 +163,8 @@ export async function connectWalletConnect(): Promise<ConnectedWallet> {
     showQrModal: true,
     rpcMap: { [CHAIN_ID]: ETHREX_URL },
     metadata: {
-      name: "Shepherd",
-      description: "A scoped agent wallet",
+      name: "Shepherd Wallet",
+      description: "A scoped agent wallet on the alt mempool",
       url: window.location.origin,
       icons: [`${window.location.origin}/icon.png`],
     },

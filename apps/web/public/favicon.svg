@@ -1,5 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#e7eadf"/>
-  <path d="M32 8 L56 54 H45 L32 26 L19 54 H8 Z" fill="#1d1f1c"/>
-  <path d="M32 30 L44 54 H20 Z" fill="#F54E00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Shepherd mark: anon sheep. Flat, 3 colors, readable at 16px. -->
+  <rect width="128" height="128" rx="28" fill="#151515"/>
+  <circle cx="64" cy="36" r="14" fill="#F4F5F0"/>
+  <ellipse cx="34" cy="50" rx="13" ry="19" fill="#F4F5F0" transform="rotate(-32 34 50)"/>
+  <ellipse cx="94" cy="50" rx="13" ry="19" fill="#F4F5F0" transform="rotate(32 94 50)"/>
+  <circle cx="64" cy="70" r="34" fill="#F4F5F0"/>
+  <rect x="28" y="58" width="72" height="17" rx="5" fill="#F54E00"/>
 </svg>

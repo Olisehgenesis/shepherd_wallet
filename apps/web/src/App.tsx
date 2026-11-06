@@ -13,6 +13,7 @@ import { Docs, How, Landing, McpPage, Trust } from "./pages";
 import { AgentPlaceholder, AgentSection } from "./shell/AgentSection";
 import { AppShell } from "./shell/AppShell";
 import { legacyRedirects, paths } from "./shell/destinations";
+import { McpConsole } from "./shell/McpConsole";
 import { DemoHub, YouLayout, YouPage } from "./shell/YouPage";
 import { StoreProvider } from "./store";
 
@@ -29,6 +30,7 @@ export function App() {
           <Route path="/console" element={<AppShell />}>
             <Route index element={<Overview />} />
             <Route path="wallet" element={<YouPage />} />
+            <Route path="mcp" element={<McpConsole />} />
             <Route path="agents" element={<AgentSection />}>
               <Route index element={<AgentsPage />} />
               <Route path="session" element={<SessionPage />} />

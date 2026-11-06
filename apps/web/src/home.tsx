@@ -58,62 +58,48 @@ export function Home() {
     <section className="home" data-home-step={model.next ?? "ready"} data-balance={store.deployed ? "visible" : "pending"}>
       <header className="home-top">
         <div>
-          <div className="home-pill">Alt mempool · {CHAIN_ID}</div>
           <h1>Home</h1>
           <p>You are the owner. Agents act only inside policy.</p>
         </div>
-        <button className="home-btn" type="button" onClick={() => openWallet("home")}>
-          {store.deployed
-            ? `Account ${shortAddress(store.deployed.account)}`
-            : store.ownerAddress
-              ? `Owner ${shortAddress(store.ownerAddress)}`
-              : "Account"}
-        </button>
       </header>
 
-      <div className="home-grid">
-        <article className="home-card">
-          <h2>Balance</h2>
-          <p className="home-balance">{eth == null ? (store.deployed ? "…" : "0 ETH") : `${eth} ETH`}</p>
+      <div className="home-stack">
+        <section className="home-block" aria-labelledby="home-balance-title">
+          <h2 id="home-balance-title">Balance</h2>
+          <p className="home-balance" aria-live="polite">
+            {eth == null ? (store.deployed ? "…" : "0 ETH") : `${eth} ETH`}
+          </p>
           <p className="home-note">
             {store.deployed
               ? "Shepherd account · not a browser-extension balance"
               : "Shepherd account is not on chain 1337 yet."}
           </p>
-          <div className="home-actions">
-            {model.next === "prepare" && (
-              <button className="home-btn primary" type="button" disabled={store.busy} onClick={() => void store.prepare()}>
-                Prepare the account
+          {store.deployed && (
+            <div className="home-actions">
+              <button className="home-btn" type="button" disabled={store.busy} onClick={send}>
+                Send
               </button>
-            )}
-            <button className="home-btn" type="button" disabled={!store.deployed || store.busy} onClick={send}>
-              Send
-            </button>
-            <button className="home-btn" type="button" disabled={!store.deployed || store.busy} onClick={() => openWallet("receive")}>
-              Receive
-            </button>
-            <button
-              className={model.next === "prepare" ? "home-btn" : "home-btn primary"}
-              type="button"
-              disabled={!store.deployed || store.busy}
-              onClick={() => void grant()}
-            >
-              Grant an agent
-            </button>
-          </div>
-        </article>
+              <button className="home-btn" type="button" disabled={store.busy} onClick={() => openWallet("receive")}>
+                Receive
+              </button>
+              {model.next !== "prepare" && model.next !== "backup" && (
+                <button className="home-btn primary" type="button" disabled={store.busy} onClick={() => void grant()}>
+                  Grant an agent
+                </button>
+              )}
+            </div>
+          )}
+        </section>
 
-        <article className="home-card home-need">
-          <h2>Needs you</h2>
-          {model.needsYou.length === 0 ? (
-            <p>Nothing needs you right now.</p>
-          ) : (
+        {model.needsYou.length > 0 && (
+          <section className="home-block home-need" aria-labelledby="home-needs-title">
+            <h2 id="home-needs-title">Needs you</h2>
             <ul className="home-needs">
               {model.needsYou.includes("prepare") && (
                 <li>
                   <p>
-                    <strong>Prepare the account</strong> on Alt mempool (chain {CHAIN_ID}). This funds the owner key and deploys
-                    the policy, vault, and account.
+                    <strong>Prepare the account</strong> on chain {CHAIN_ID}. Funds the owner key and deploys policy,
+                    vault, and account.
                   </p>
                   <button className="home-btn primary" type="button" disabled={store.busy} onClick={() => void store.prepare()}>
                     Prepare the account
@@ -123,7 +109,7 @@ export function Home() {
               {model.needsYou.includes("backup") && (
                 <li>
                   <p>
-                    <strong>Backup the owner key</strong> before the first grant. Closing this tab deletes it.
+                    <strong>Back up the owner key</strong> before the first grant. Closing this tab deletes it.
                   </p>
                   <button className="home-btn primary" type="button" onClick={() => openWallet("backup")}>
                     Back up now
@@ -144,15 +130,15 @@ export function Home() {
                 </li>
               )}
             </ul>
-          )}
-        </article>
+          </section>
+        )}
 
-        <article className="home-card home-span">
-          <h2>Your agents</h2>
+        <section className="home-block" aria-labelledby="home-agents-title">
+          <h2 id="home-agents-title">Your agents</h2>
           {store.sessionAddress ? (
             <div className="home-row">
               <div className="home-agent">
-                <span className={store.live?.active ? "home-dot" : "home-dot idle"} />
+                <span className={store.live?.active ? "home-dot" : "home-dot idle"} aria-hidden="true" />
                 <div>
                   <strong>Root session</strong>
                   <div className="home-muted">
@@ -167,7 +153,11 @@ export function Home() {
                   className="home-btn danger"
                   type="button"
                   disabled={store.busy}
-                  onClick={() => requestRevoke(() => { void store.revokeSession(); })}
+                  onClick={() =>
+                    requestRevoke(() => {
+                      void store.revokeSession();
+                    })
+                  }
                 >
                   Revoke
                 </button>
@@ -178,7 +168,7 @@ export function Home() {
           ) : (
             <div className="home-row">
               <div className="home-agent">
-                <span className="home-dot idle" />
+                <span className="home-dot idle" aria-hidden="true" />
                 <div>
                   <strong>No agent yet</strong>
                   <div className="home-muted">
@@ -196,18 +186,19 @@ export function Home() {
           {store.agents.length === 0 ? (
             <div className="home-row">
               <div className="home-agent">
-                <span className="home-dot idle" />
+                <span className="home-dot idle" aria-hidden="true" />
                 <div>
                   <strong>No child agents</strong>
-                  <div className="home-muted">Spawn from Agents</div>
+                  <div className="home-muted">
+                    Spawn from <Link className="home-link" to="/console/agents">Agents</Link>
+                  </div>
                 </div>
               </div>
-              <span className="home-muted">—</span>
             </div>
           ) : (
             <div className="home-row">
               <div className="home-agent">
-                <span className="home-dot idle" />
+                <span className="home-dot idle" aria-hidden="true" />
                 <div>
                   <strong>
                     {store.agents.length} child agent{store.agents.length === 1 ? "" : "s"}
@@ -220,17 +211,15 @@ export function Home() {
               </Link>
             </div>
           )}
-        </article>
+        </section>
 
-        <article className="home-card home-span">
-          <h2>Waiting for co-sign</h2>
-          {pending.length === 0 ? (
-            <p className="home-muted">Nothing waiting. High-risk calls (like sweep) will appear here.</p>
-          ) : (
-            pending.map((row) => (
+        {pending.length > 0 && (
+          <section className="home-block" aria-labelledby="home-cosign-title">
+            <h2 id="home-cosign-title">Waiting for co-sign</h2>
+            {pending.map((row) => (
               <div className="home-row" key={row.id}>
                 <div className="home-agent">
-                  <span className="home-dot wait" />
+                  <span className="home-dot wait" aria-hidden="true" />
                   <div>
                     <strong>{row.preview}</strong>
                     <div className="home-muted">
@@ -242,9 +231,9 @@ export function Home() {
                   Review
                 </button>
               </div>
-            ))
-          )}
-        </article>
+            ))}
+          </section>
+        )}
       </div>
     </section>
   );

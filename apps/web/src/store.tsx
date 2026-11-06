@@ -53,6 +53,7 @@ import {
   type Outcome,
 } from "../../../packages/core/src/index.js";
 import { startAnon, type AnonSession } from "./anon";
+import { startAnonBridgeHost } from "./anon-bridge-host";
 import {
   addSpentWei,
   appendActivity,
@@ -345,10 +346,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onAnnounce = (event: Event) => {
-      const detail = (event as CustomEvent<{ info: WalletChoice; provider: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> } }>).detail;
+      const detail = (event as CustomEvent<{
+        info: WalletChoice & { icon?: string };
+        provider: { request: (args: { method: string; params?: unknown[] }) => Promise<unknown> };
+      }>).detail;
       if (!detail?.info) return;
-      rememberWallet(detail);
-      setWallets((current) => (current.some((item) => item.uuid === detail.info.uuid) ? current : [...current, detail.info]));
+      const info: WalletChoice = {
+        uuid: detail.info.uuid,
+        name: detail.info.name,
+        rdns: detail.info.rdns,
+        icon: detail.info.icon,
+      };
+      rememberWallet({ info, provider: detail.provider });
+      setWallets((current) => (current.some((item) => item.uuid === info.uuid) ? current : [...current, info]));
     };
     window.addEventListener("eip6963:announceProvider", onAnnounce);
     window.dispatchEvent(new Event("eip6963:requestProvider"));
@@ -380,12 +390,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!location.pathname.startsWith("/console")) return;
     const session = startAnon(() => push("specifier.workerHash", "clear", "bootstrap"));
     let cancel = false;
+    let stopHost: (() => void) | undefined;
     setAnonState((state) => (state === "ready" ? state : "starting"));
     session.ready
       .then(async () => {
         if (cancel) return;
         setAnon(session);
         setAnonState("ready");
+        stopHost = startAnonBridgeHost(session);
         const id = await session.read("eth_chainId", []);
         push("eth_chainId", "anon", "ok");
         setChainLabel(`chain ${Number(id)}`);
@@ -395,6 +407,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       });
     return () => {
       cancel = true;
+      stopHost?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);

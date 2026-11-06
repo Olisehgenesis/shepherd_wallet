@@ -4,20 +4,20 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] text-sm font-semibold transition-[filter,transform,background-color,box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--forest)] disabled:pointer-events-none disabled:opacity-45",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-ctl)] text-[13px] font-normal transition-[filter,background-color,border-color] duration-150 ease-out focus-visible:outline-[2px] focus-visible:outline-[var(--focus)] focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none",
   {
     variants: {
       variant: {
-        default:
-          "bg-[var(--forest)] text-white border border-transparent hover:brightness-[1.05] active:translate-y-px shadow-[0_8px_20px_color-mix(in_srgb,var(--forest)_22%,transparent)]",
-        ghost: "bg-transparent text-[var(--ink)] border border-[var(--line)] hover:bg-[var(--surface)]",
+        default: "bg-[var(--accent)] text-[var(--accent-ink)] border border-transparent hover:brightness-110",
+        ghost: "bg-transparent text-[var(--ink)] border-0 hover:bg-[var(--accent-soft)]",
         danger: "bg-[var(--danger)] text-white border border-transparent",
-        outline: "bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] hover:bg-[var(--surface-2)]",
+        outline: "bg-[var(--surface)] text-[var(--ink)] border border-[var(--line)] hover:bg-[var(--accent-soft)]",
+        brand: "bg-[var(--band)] text-white border border-transparent hover:brightness-110",
       },
       size: {
-        default: "h-11 px-5 py-2",
-        lg: "h-12 px-6 text-[15px]",
-        sm: "h-9 px-4 text-xs",
+        default: "h-9 px-3 py-2",
+        lg: "h-10 px-4 text-[14px]",
+        sm: "h-8 px-2.5 text-[12px]",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

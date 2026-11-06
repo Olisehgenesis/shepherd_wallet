@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 
+/** Brand mark from extension-assets pipeline (`icon.svg` → `npm run icons`). */
 export function Mark({ size = 28 }: { size?: number }) {
   return (
     <img
@@ -18,11 +19,15 @@ export function Modal({
   onClose,
   children,
   wide = false,
+  icon,
+  back,
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   wide?: boolean;
+  icon?: ReactNode;
+  back?: () => void;
 }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -40,16 +45,45 @@ export function Modal({
   return (
     <div className="modal-root" role="presentation">
       <button className="modal-backdrop" type="button" aria-label="Close dialog" onClick={onClose} />
-      <div className={wide ? "modal modal-wide pixel-panel" : "modal pixel-panel"} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div
+        className={wide ? "modal modal-wide wallet-modal pixel-panel" : "modal pixel-panel"}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         <header className="modal-head">
-          <h2 id="modal-title">{title}</h2>
-          <button className="btn-ghost modal-close" type="button" onClick={onClose}>
-            Close
+          <div className="modal-head-title">
+            {back && (
+              <button className="wallet-icon-btn" type="button" onClick={back} aria-label="Back">
+                <BackIcon />
+              </button>
+            )}
+            {icon}
+            <h2 id="modal-title">{title}</h2>
+          </div>
+          <button className="wallet-icon-btn modal-close" type="button" onClick={onClose} aria-label="Close">
+            <CloseIcon />
           </button>
         </header>
         <div className="modal-body">{children}</div>
       </div>
     </div>
+  );
+}
+
+function BackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M10 3 5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
   );
 }
 

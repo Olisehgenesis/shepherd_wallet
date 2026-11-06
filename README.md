@@ -12,7 +12,7 @@ Prize fit: **Best use of the Frame Transaction Alternative Mempool** (one Ethere
 
 - **Censorship resistance.** The agent path `staticcall`s `ShepherdPolicy` during `VERIFY`. Canonical rules return `StorageReadNonSender`. The unstaked alt mempool rejects the same read. After `addStake` on the devnet registry, the alt mempool admits it. That is the product, not a private relay.
 - **Open source.** MIT. No tracker, no analytics script, no font CDN. Build and demo steps are in this file.
-- **Privacy.** Humans may already be private. Agents should be too. Browser chain reads — including the agent console — go through `@anon-rpc/browser-harness` by default so agent activity is not a cleartext side channel. The worker cannot touch keys, cookies, or the DOM. It **can** see every request body, and the reference specifier (`0x4fd77be300f31c5fe6ab266d35d27750a3478d27`) fulfils calls with ordinary `fetch`, so it does not unlink your IP. The one mainnet bootstrap read is not anonymized. Submissions stay on the clear gateway because the mempool has to see them. The ops log stores method, route, and verdict. It does not store addresses, payloads, or keys. There is no Node harness; the CLI’s reads are clear and labeled as such.
+- **Privacy.** Humans may already be private. Agents should be too. Browser chain reads — including the agent console — go through `@anon-rpc/browser-harness` by default so agent activity is not a cleartext side channel. Local MCP agents reuse that harness over a loopback bridge (`127.0.0.1:17814`) while the console is open. The worker cannot touch keys, cookies, or the DOM. It **can** see every request body, and the reference specifier (`0x4fd77be300f31c5fe6ab266d35d27750a3478d27`) fulfils calls with ordinary `fetch`, so it does not unlink your IP. The one mainnet bootstrap read is not anonymized. Submissions stay on the clear gateway because the mempool has to see them. The ops log stores method, route, and verdict. It does not store addresses, payloads, or keys. There is no native Node harness; without an open console, MCP reads fail closed instead of falling back to clear.
 - **Security.** The agent never holds the owner key. `VERIFY` reverts before `APPROVE` on a bad target, a value above the session cap, a revoked session, or a high-risk call without a second protocol signature (owner secp256k1 or a registered P256 key). `TIMESTAMP` is not used in validation (`OP-011`). The expiry frame’s data is hidden from other `VERIFY` frames, so a wall-clock check inside the account is impossible. **Revoke** is the kill switch. An attached expiry frame is enforced only when that contract has code, and only by its target, not by a timestamp the account can see.
 
 ## What this does not claim
@@ -26,8 +26,9 @@ Prize fit: **Best use of the Frame Transaction Alternative Mempool** (one Ethere
 ## Layout
 
 - `contracts/` — `ShepherdAccount`, `ShepherdPolicy`, `ShepherdVault`, rule tests
-- `packages/core/` — frame codec, policy mirror, devnet client
-- `apps/web/` — ops dashboard
+- `packages/core/` — frame codec, policy mirror, anon bridge, devnet client
+- `apps/web/` — Vite console (demo + Anon browser harness + MCP bridge host)
+- `apps/ext/` — Shepherd Wallet browser extension (WXT); Anon extension harness next
 - `apps/agent/` — `propose` → mirror → sign-within-policy
 - `apps/mcp/` — local MCP server. A session can spawn a child session. The child cannot outspend or outlive the parent, and no tool returns the owner key.
 - `RESEARCH.md` — sources and the decision record

@@ -17,3 +17,8 @@ contracts/broadcast/
 .DS_Store
 .vercel
 .env*
+
+# Extension build / deps
+apps/ext/node_modules/
+apps/ext/.output/
+apps/ext/.wxt/

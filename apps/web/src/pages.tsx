@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { OrbitalPrivacy } from "@/components/OrbitalPrivacy";
 import { Button } from "@/components/ui/button";
 import { paths } from "./shell/destinations";
 import { Site } from "./site";
@@ -54,14 +53,14 @@ const privacyDoes = [
   "Policy-based verification of agent calls",
   "Canonical versus alt mempool execution paths",
   "Session permissions and co-signing for high-risk actions",
-  "Redacted ops logs — method, route, and verdict only",
+  "Redacted ops logs: method, route, and verdict only",
 ] as const;
 
 const privacyDoesNot = [
-  "Not a fully private RPC — the worker sees request bodies",
+  "Not a fully private RPC: the worker sees request bodies",
   "Reference worker uses ordinary fetch and does not unlink IP",
   "Frame submissions go clear to the mempool",
-  "Node CLI and MCP do not currently use Anon-RPC",
+  "MCP eth_* reads need the open console Anon bridge; frame submissions stay clear",
   "Not safe against a malicious Anon-RPC worker",
 ] as const;
 
@@ -76,27 +75,33 @@ export function Landing() {
   return (
     <Site>
       <section className="hero-editorial" aria-label="Shepherd home">
-        <div className="wrap hero-grid">
+        <div className="wrap hero-split">
           <div className="hero-copy">
             <p className="hero-brand">Shepherd</p>
-            <p className="hero-eyebrow">Privacy infrastructure for agent calls</p>
             <h1 className="hero-title">Privacy calls for you and your agent.</h1>
             <p className="hero-deck">
-              Let your agents make on-chain calls with policy-controlled execution and privacy-aware browser reads.
+              You keep the owner key. Agents get a scoped session: policy-checked spends, Anon-RPC reads, alt-mempool
+              admission.
             </p>
             <div className="hero-actions">
               <Button asChild size="lg">
                 <Link to={paths.wallet}>Connect Wallet</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/console">Explore the Console</Link>
+                <Link to="/console">Open Console</Link>
               </Button>
             </div>
-            <p className="hero-aside">
-              Built around the public alt mempool and EIP-8141. You keep the owner key. The agent gets a scoped session.
-            </p>
           </div>
-          <OrbitalPrivacy className="hero-visual" />
+          <figure className="hero-figure">
+            <img
+              src="/hero.jpg"
+              alt="Ethereum shepherd with anonymized sheep on a farm"
+              width={1024}
+              height={682}
+              decoding="async"
+              fetchPriority="high"
+            />
+          </figure>
         </div>
       </section>
 
@@ -107,8 +112,8 @@ export function Landing() {
               Three promises. No fake scores.
             </h2>
             <p className="section-sub">
-              Shepherd helps protect browser reads, enforce call policies, and verify execution without exposing more
-              information than necessary.
+              Protect browser reads, enforce call policy, and show canonical reject versus alt admit, without inventing
+              privacy you do not have.
             </p>
           </div>
           <div className="capability-list">
@@ -157,7 +162,7 @@ export function Landing() {
           <div className="section-intro">
             <p className="mono-label">Privacy architecture</p>
             <h2 id="privacy-title" className="section-title">
-              Honest about what is private — and what is not.
+              Honest about what is private, and what is not.
             </h2>
             <p className="section-sub">
               Shepherd is privacy infrastructure for agent calls, not a fully private RPC service and not a key-custody
@@ -193,7 +198,7 @@ export function Landing() {
           <div className="console-copy">
             <p className="mono-label">Interactive console</p>
             <h2 id="console-title" className="section-title">
-              A real console — not a static mockup.
+              A real console, not a static mockup.
             </h2>
             <p className="section-sub">
               Connect a wallet, prepare the account, grant a session, and watch canonical rejection versus alt admission.
@@ -201,10 +206,10 @@ export function Landing() {
             </p>
             <div className="hero-actions">
               <Button asChild>
-                <Link to="/console">Explore the Console</Link>
+                <Link to="/console">Open Console</Link>
               </Button>
               <Button asChild variant="ghost">
-                <Link to="/docs">Documentation</Link>
+                <Link to="/docs">Read the docs</Link>
               </Button>
             </div>
           </div>
@@ -214,7 +219,7 @@ export function Landing() {
               <span>devnet 1337</span>
             </div>
             <div className="console-panel-body">
-              <div className="console-nav">
+              <div className="console-panel-tabs">
                 <span className="is-active">Home</span>
                 <span>Agents</span>
                 <span>Activity</span>
@@ -242,7 +247,7 @@ export function Landing() {
                   ))}
                 </tbody>
               </table>
-              <p className="console-panel-note">Illustrative outcomes from the demo path — open the console for live state.</p>
+              <p className="console-panel-note">Illustrative outcomes from the demo path. Open the console for live state.</p>
             </div>
           </div>
         </div>
@@ -256,11 +261,11 @@ export function Landing() {
             <p>Open the console on the public alt-mempool devnet. No API key required for injected wallets.</p>
           </div>
           <div className="hero-actions">
-            <Button asChild size="lg" variant="outline" className="close-primary">
+            <Button asChild size="lg" className="close-primary">
               <Link to={paths.wallet}>Connect Wallet</Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="close-secondary">
-              <Link to="/console">Explore the Console</Link>
+              <Link to="/console">Open Console</Link>
             </Button>
           </div>
         </div>
@@ -269,254 +274,7 @@ export function Landing() {
   );
 }
 
-export function How() {
-  return (
-    <Site>
-      <article className="wrap prose">
-        <p className="mono-label">How it works</p>
-        <h1>How Shepherd decides</h1>
-        <p>
-          A frame transaction carries a VERIFY frame and a call. Shepherd’s account approves the call only when the
-          signer, the target, the selector, and the value all fit the session.
-        </p>
-        <ol className="steps">
-          <li>
-            <b>1</b>
-            <div>
-              <h3>You are the owner path</h3>
-              <p>
-                Empty VERIFY data means the frame signer is the owner. That path does not read the policy, so it can
-                deploy, stake, grant, and revoke while the account is unstaked.
-              </p>
-            </div>
-          </li>
-          <li>
-            <b>2</b>
-            <div>
-              <h3>The agent is the other path</h3>
-              <p>
-                VERIFY data 0x01 means the signer must be an active session. The account then reads ShepherdPolicy. That
-                external read is why the canonical mempool says no.
-              </p>
-            </div>
-          </li>
-          <li>
-            <b>3</b>
-            <div>
-              <h3>High-risk waits</h3>
-              <p>
-                Sweep is allowlisted as high-risk. It needs a second signature from the owner or a registered P256
-                co-signer. The healthy agent refuses to sign that one by itself.
-              </p>
-            </div>
-          </li>
-          <li>
-            <b>4</b>
-            <div>
-              <h3>Revoke is the kill switch</h3>
-              <p>
-                The account does not read a timestamp. An expiry frame is attached only when that verifier has code, and
-                the account checks the target, not the hidden timestamp. Revoke is what stops the session.
-              </p>
-            </div>
-          </li>
-        </ol>
-        <p>
-          <Link className="btn" to="/docs">
-            How to use it
-          </Link>
-        </p>
-      </article>
-    </Site>
-  );
-}
-
-export function Docs() {
-  return (
-    <Site>
-      <article className="wrap prose">
-        <p className="mono-label">Documentation</p>
-        <h1>How to use Shepherd</h1>
-        <p>
-          You need a browser wallet, or a WalletConnect project id, and a network path to the public devnet. No API key
-          is required for the injected path.
-        </p>
-        <h2>In the console</h2>
-        <ol>
-          <li>
-            Open the console and use <Link to={paths.wallet}>Connect wallet</Link>. Any EIP-6963 wallet can appear.
-            WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>. Export/import the frame signer from You →
-            Backup.
-          </li>
-          <li>
-            Open <Link to={paths.home}>Home</Link> and choose Prepare the account. Shepherd funds the frame signer from
-            the shared genesis key, then the three contracts deploy. This can take a minute. The loader stays up until
-            the receipt lands.
-          </li>
-          <li>
-            Open <Link to={paths.session}>Agents → Session</Link>, set the value cap and the TTL, then issue a session key.
-            TTL is stored and shown; this account does not enforce it on-chain. Revoke is what stops the session. Reveal
-            the key once if another process needs it. The key stays in this tab until you revoke.
-          </li>
-          <li>
-            Open <Link to={paths.agents}>Agents</Link> to grant a session, edit what it may do, and spawn or revoke
-            children. Permissions use allow, needs co-sign, or deny.
-          </li>
-          <li>
-            Open <Link to={paths.mempool}>You → Demo → Mempool</Link>, stake 0.012 ETH, then send the ping to the alt
-            mempool. The canonical send should be rejected for the storage read.
-          </li>
-          <li>
-            Open <Link to={paths.intents}>You → Demo → Intents</Link> for a custom call or the demo buttons. High-risk
-            opens the <Link to={paths.approvals}>co-sign queue</Link>. History is on{" "}
-            <Link to={paths.activity}>Activity</Link>.
-          </li>
-          <li>
-            Open <Link to={paths.reads}>You → Demo → Reads</Link>. Balance and code go through the harness. If the
-            harness fails, that page does not fall back to a clear provider.
-          </li>
-        </ol>
-        <h2>What you should see</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Action</th>
-              <th>Verdict</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>In-policy ping, after stake</td>
-              <td>admitted, with an explorer link in the log reason when the chain returns one</td>
-            </tr>
-            <tr>
-              <td>Value to an unknown target</td>
-              <td>TargetDenied</td>
-            </tr>
-            <tr>
-              <td>Sweep before you co-sign</td>
-              <td>NeedsCosign</td>
-            </tr>
-            <tr>
-              <td>Sweep after co-sign</td>
-              <td>admitted</td>
-            </tr>
-            <tr>
-              <td>Same ping on the canonical mempool</td>
-              <td>canonical-storage-read</td>
-            </tr>
-          </tbody>
-        </table>
-        <h2>From the terminal</h2>
-        <pre>{`npm install --registry https://registry.npmjs.org
-npm run test:contracts
-npm run demo
-npm run dev
-npm run mcp`}</pre>
-        <p>
-          <code>npm run demo</code> writes throwaway keys to <code>.shepherd-state.json</code>. That file stays off git.
-          The MCP server reads it and will not return the owner key. See <Link to="/mcp">MCP</Link>.
-        </p>
-      </article>
-    </Site>
-  );
-}
-
-export function Trust() {
-  return (
-    <Site>
-      <article className="wrap prose">
-        <p className="mono-label">Privacy</p>
-        <h1>What Shepherd claims</h1>
-        <h2>Censorship resistance</h2>
-        <p>
-          The agent path reads another contract during VERIFY. Canonical rules reject that read. A staked account on the
-          alt mempool can be admitted. There is no private relay in front of this.
-        </p>
-        <h2>Open source</h2>
-        <p>MIT. No tracker, no analytics script, no font CDN. The pages in this app are the docs.</p>
-        <h2>Privacy</h2>
-        <p>
-          Browser chain reads go through the Anon-RPC harness. The worker cannot touch keys, cookies, or the DOM. It can
-          see every request body. The reference worker fulfils calls with ordinary fetch, so it does not unlink your IP.
-          Frame submissions stay on the clear gateway because the mempool has to see them. Node CLI and MCP do not
-          currently use Anon-RPC. The ops log stores method, route, and verdict.
-        </p>
-        <h2>Security</h2>
-        <p>
-          The agent never holds the owner key. VERIFY reverts before approve on a bad target, a value above the cap, a
-          revoked session, or a high-risk call without a second signature. Revoke is the kill switch.
-        </p>
-        <h2>Not claimed</h2>
-        <ul>
-          <li>Not a fully private RPC.</li>
-          <li>Not safe against a malicious worker. It can censor or lie about reads.</li>
-          <li>Not a production multisig. The owner path can call anything. That path is you.</li>
-          <li>A browser wallet cannot sign the frame digest. The frame signer is generated in this tab.</li>
-        </ul>
-      </article>
-    </Site>
-  );
-}
-
-export function McpPage() {
-  return (
-    <Site>
-      <article className="wrap prose">
-        <div className="asset-row">
-          <img className="asset-agent" src="/agent.png?v=3d" alt="" width={160} height={160} decoding="async" />
-          <div>
-            <p className="mono-label">MCP</p>
-            <h1>Agents can spawn agents</h1>
-            <p>
-              <code>npm run mcp</code> speaks MCP over stdio. Cursor loads it from <code>.cursor/mcp.json</code>. The
-              server uses the owner key inside the process. No tool returns that key. MCP does not currently use
-              Anon-RPC.
-            </p>
-            <p>
-              For a live owner UI (list / spawn / revoke children in the browser), open{" "}
-              <Link to={paths.agents}>Console → Agents</Link>.
-            </p>
-          </div>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Tool</th>
-              <th>What it does</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>shepherd_posture</td>
-              <td>Says whether the root session is active and whether the account is staked.</td>
-            </tr>
-            <tr>
-              <td>shepherd_list_agents</td>
-              <td>Lists children. No keys.</td>
-            </tr>
-            <tr>
-              <td>shepherd_spawn_agent</td>
-              <td>
-                Grants a child under root or under another agent. The cap and the expiry cannot exceed the parent. Depth
-                stops at 3. Eight children per parent.
-              </td>
-            </tr>
-            <tr>
-              <td>shepherd_revoke_agent</td>
-              <td>Revokes one spawned session.</td>
-            </tr>
-            <tr>
-              <td>shepherd_propose_intent</td>
-              <td>Signs an in-policy ping only when the mirror says allow.</td>
-            </tr>
-          </tbody>
-        </table>
-        <p>
-          Run <code>npm run demo</code> once so the state file has an account, then start the MCP server. Spawn from
-          parent id <code>root</code>.
-        </p>
-      </article>
-    </Site>
-  );
-}
+export { HowPage as How } from "./guide/HowPage";
+export { DocsPage as Docs } from "./guide/DocsPage";
+export { TrustPage as Trust } from "./guide/TrustPage";
+export { McpGuidePage as McpPage } from "./guide/McpGuidePage";

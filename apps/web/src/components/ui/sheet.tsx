@@ -31,21 +31,24 @@ export function SheetContent({
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
-          "fixed z-50 flex flex-col gap-4 border-[var(--ink)] bg-[var(--surface)] p-5 shadow-xl transition ease-in-out",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-300",
+          "fixed z-50 flex flex-col gap-4 overscroll-contain border-[var(--line)] bg-[var(--surface)] p-5 shadow-xl transition ease-in-out",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-150 data-[state=open]:duration-300",
           side !== "bottom" && "inset-y-0 h-full w-full max-w-sm",
           side === "right" &&
-            "right-0 border-l-2 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+            "right-0 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
           side === "left" &&
-            "left-0 border-r-2 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+            "left-0 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
           side === "bottom" &&
-            "inset-x-0 bottom-0 mx-auto h-auto max-h-[min(85vh,720px)] w-[min(640px,100%)] max-w-none overflow-hidden rounded-t-[20px] border-t border-[var(--line)] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+            "inset-x-0 bottom-0 mx-auto h-auto max-h-[min(85vh,720px)] w-[min(640px,100%)] max-w-none overflow-hidden rounded-t-[var(--radius)] border-t border-[var(--line)] data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--surface)]">
+        <DialogPrimitive.Close
+          className="absolute right-4 top-4 inline-flex size-8 items-center justify-center rounded-[var(--radius-ctl)] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--ink)] hover:bg-[var(--accent-soft)]"
+          aria-label="Close"
+        >
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

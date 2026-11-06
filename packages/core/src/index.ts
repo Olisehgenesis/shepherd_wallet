@@ -1,5 +1,6 @@
 export * from "./config.js";
 export * from "./redact.js";
+export * from "./anon-bridge.js";
 export * from "./rpc.js";
 export * from "./abi.js";
 export * from "./chain.js";

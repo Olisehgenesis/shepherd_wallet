@@ -1,3 +1,4 @@
+import { isAnonReadMethod, rpcViaAnonBridge } from "./anon-bridge.js";
 import { GATEWAY_URL } from "./config.js";
 import { redact, verdictFromMessage } from "./redact.js";
 
@@ -9,7 +10,26 @@ export class ChainError extends Error {
   }
 }
 
+/** When true, eth_* reads go through the console Anon-RPC bridge. Writes stay clear. */
+let preferAnonBridgeReads = false;
+
+export function setPreferAnonBridgeReads(enabled: boolean) {
+  preferAnonBridgeReads = enabled;
+}
+
+export function prefersAnonBridgeReads() {
+  return preferAnonBridgeReads;
+}
+
 export async function rpc(method: string, params: unknown[], url = GATEWAY_URL): Promise<unknown> {
+  if (preferAnonBridgeReads && isAnonReadMethod(method)) {
+    try {
+      return await rpcViaAnonBridge(method, params);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "anon bridge unreachable";
+      throw new ChainError(message);
+    }
+  }
   let response: Response;
   try {
     response = await fetch(url, {

@@ -1,18 +1,16 @@
 /**
  * Console information architecture.
- * Other slices should import these paths instead of hard-coding old primary-nav URLs.
  *
- * Primary: Home, Agents, Activity, You.
+ * Primary nav: Agents, MCP, Wallet.
  * Policy and session grant/revoke live under Agents.
  * Approvals open as a queue sheet (search `queue=approvals`).
- * Wallet, backup, network, and demo tools live under You.
+ * Demo tools stay under You → Demo (reachable from Wallet / legacy URLs).
  */
 
 export const primaryNav = [
-  { id: "home", to: "/console", label: "Home", end: true },
   { id: "agents", to: "/console/agents", label: "Agents", end: false },
-  { id: "activity", to: "/console/activity", label: "Activity", end: true },
-  { id: "you", to: "/console/you", label: "You", end: false },
+  { id: "mcp", to: "/console/mcp", label: "MCP", end: true },
+  { id: "wallet", to: "/console/wallet", label: "Wallet", end: true },
 ] as const;
 
 export type PrimaryNavId = (typeof primaryNav)[number]["id"];
@@ -25,6 +23,7 @@ export const paths = {
   agent: (agentId: string) => `/console/agents/${encodeURIComponent(agentId)}`,
   agentPolicy: (agentId: string) => `/console/agents/${encodeURIComponent(agentId)}/permissions`,
   activity: "/console/activity",
+  mcp: "/console/mcp",
   you: "/console/you",
   wallet: "/console/wallet",
   demo: "/console/you/demo",
@@ -33,6 +32,13 @@ export const paths = {
   intents: "/console/you/demo/intents",
   approvals: "/console?queue=approvals",
 } as const;
+
+/** Nested destinations shown under the Agents dropdown. */
+export const agentsMenu = [
+  { to: paths.agents, label: "All agents", description: "Sessions and child agents" },
+  { to: paths.session, label: "Session", description: "Grant or revoke the root key" },
+  { to: paths.policy, label: "Root permissions", description: "Allow, co-sign, or deny" },
+] as const;
 
 /** Old primary-nav URLs that still resolve. */
 export const legacyRedirects = [

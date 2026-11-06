@@ -1,33 +1,66 @@
+/**
+ * Shepherd tokens — PostHog product aesthetic
+ * Source skill: .cursor/skills/posthog-ui-skills
+ *
+ * The upstream skill marks dark mode with broken surface/text hex values.
+ * Shepherd uses PostHog’s light product surface (olive page, white panels,
+ * heat-orange primary) with the skill’s structural rules: Inter, 4px grid,
+ * 3px radius, 1px borders, focus ring #5E6AD2.
+ */
 :root {
-  --bg: #f5f3ec;
+  /* Surfaces */
+  --bg: #f0f0eb;
   --surface: #ffffff;
-  --surface-2: #eceae2;
-  --ink: #191b18;
-  --muted: #77786f;
-  --line: #e2e0d7;
-  --forest: #285b42;
-  --mint: #b9e5c8;
-  --mint-light: #e1f2e5;
-  --amber: #d99a42;
-  --amber-light: #f7ebd7;
-  --accent: #285b42;
+  --surface-2: #e9e9e2;
+  --band: #151515;
+
+  /* Text */
+  --ink: #151515;
+  --muted: #55554a;
+
+  /* Borders */
+  --line: #d4d4c8;
+
+  /* Accent — PostHog heat orange (one primary per screen) */
+  --accent: #f54e00;
   --accent-ink: #ffffff;
-  --danger: #b94c43;
-  --danger-bg: #f8e8e6;
-  --ok: #285b42;
-  --ok-bg: #e1f2e5;
+  --accent-soft: #e38b20;
+
+  /* Semantic */
+  --danger: #db3707;
+  --danger-bg: #fdece8;
+  --ok: #3d7a4a;
+  --ok-bg: #e4f0e6;
   --wait: #9a6b00;
-  --wait-bg: #f7ebd7;
-  --info: #3d5a4c;
-  --info-bg: #e8efe9;
-  --radius: 12px;
-  --radius-ctl: 10px;
+  --wait-bg: #f6edd9;
+  --info: #55554a;
+  --info-bg: #e9e9e2;
+
+  /* Legacy aliases used across CSS (mapped off forest/mint brand) */
+  --forest: #151515;
+  --mint: #ffd4c2;
+  --mint-light: #fff0e8;
+  --amber: #c17c25;
+  --amber-light: #f6edd9;
+
+  /* Geometry — skill: 3px radius, 4px grid */
+  --radius: 3px;
+  --radius-ctl: 3px;
+  --space: 4px;
   --sidebar: 220px;
-  --font: "DM Sans", system-ui, sans-serif;
+
+  /* Type — Inter self-hosted (no CDN) */
+  --font: "Inter", system-ui, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --display: "Inter", system-ui, sans-serif;
+
+  --shadow: none;
+  --focus: #5e6ad2;
+
   color: var(--ink);
   background: var(--bg);
   font-family: var(--font);
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
 }

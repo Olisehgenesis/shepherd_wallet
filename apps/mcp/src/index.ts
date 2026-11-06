@@ -6,8 +6,11 @@ import { isAddress } from "viem";
 import { z } from "zod";
 import {
   agentAct,
+  anonBridgeStatus,
+  anonBridgeUrl,
   buildTree,
   DEFAULT_TTL_SECONDS,
+  ensureAnonBridge,
   grantSession,
   highRiskCall,
   inPolicyCall,
@@ -16,12 +19,16 @@ import {
   readSession,
   revoke,
   revokeCascadeOrder,
+  setPreferAnonBridgeReads,
 } from "../../../packages/core/src/index.js";
 import { appendOps } from "./ops.js";
 import { delegate } from "./scope.js";
 import { loadState, requireDeployed, saveState, type AgentRecord, type ShepherdState } from "./state.js";
 
 const server = new McpServer({ name: "shepherd-mcp-server", version: "0.1.0" });
+
+await ensureAnonBridge();
+setPreferAnonBridgeReads(true);
 
 const POLICY_DOC = {
   rules: [
@@ -35,12 +42,19 @@ const POLICY_DOC = {
     childCannotExceedParentCapOrExpiry: true,
     ownerKeyNeverReturned: true,
   },
+  privacy: {
+    reads: "eth_* reads go through the open Shepherd console Anon-RPC harness via localhost:17814",
+    writes: "Frame submissions stay clear to the mempool",
+    require: "npm run dev with /console open so the harness can serve the bridge",
+  },
   workflow: [
     "1. npm run demo (once) so .shepherd-state.json has an account and root session",
-    "2. shepherd_posture — confirm active + staked",
-    "3. shepherd_spawn_agent with parentId \"root\"",
-    "4. shepherd_propose_intent with intent \"ping\"",
-    "5. shepherd_revoke_agent when done (cascades to descendants)",
+    "2. npm run dev — keep the console open (Anon harness + bridge host)",
+    "3. shepherd_anon_status — confirm browserConnected",
+    "4. shepherd_posture — confirm active + staked",
+    "5. shepherd_spawn_agent with parentId \"root\"",
+    "6. shepherd_propose_intent with intent \"ping\"",
+    "7. shepherd_revoke_agent when done (cascades to descendants)",
   ],
 };
 
@@ -100,19 +114,50 @@ server.registerResource(
 );
 
 server.registerTool(
+  "shepherd_anon_status",
+  {
+    title: "Read Anon-RPC bridge status",
+    description: `Check whether the open Shepherd console is serving Anon-RPC reads for this MCP process.
+
+When to use: before posture/spawn if reads fail, or to confirm privacy path. Example: call with no args after npm run dev and opening /console.
+
+Returns JSON: { "bridge": "http://127.0.0.1:17814", "browserConnected": boolean, "pending": number, "reads": "anon"|"unavailable" }.
+
+Frame submissions always stay clear. eth_* reads need browserConnected true.`,
+    inputSchema: {},
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+  },
+  async () => {
+    const status = await anonBridgeStatus();
+    const browserConnected = Boolean(status?.browserConnected);
+    appendOps("shepherd_anon_status", browserConnected ? "anon" : "clear", browserConnected ? "bridged" : "waiting");
+    return text({
+      bridge: anonBridgeUrl(),
+      browserConnected,
+      pending: status?.pending ?? 0,
+      reads: browserConnected ? "anon" : "unavailable",
+      note: browserConnected
+        ? "eth_* reads from MCP tools go through the console harness."
+        : "Open npm run dev → /console so the harness can attach to the bridge.",
+    });
+  },
+);
+
+server.registerTool(
   "shepherd_posture",
   {
     title: "Read Shepherd posture",
     description: `Read whether the root session is active and whether the account is staked.
 
-When to use: before spawning or proposing. Example: call with no args after npm run demo.
+When to use: before spawning or proposing. Example: call with no args after npm run demo and with the console open for Anon reads.
 
 Returns JSON: { "active": boolean, "staked": boolean }.
 
-Does not return keys or the owner address.
+eth_* reads go through the Anon-RPC console bridge when connected. Does not return keys or the owner address.
 
 Error Handling:
-- "No .shepherd-state.json" means run npm run demo first.`,
+- "No .shepherd-state.json" means run npm run demo first.
+- Anon bridge errors mean open the Shepherd console (npm run dev).`,
     inputSchema: {},
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   },
@@ -120,9 +165,14 @@ Error Handling:
     try {
       const state = loadState();
       const deployed = requireDeployed(state);
+      const bridge = await anonBridgeStatus();
       const row = await posture(deployed.account, privateKeyToAccount(state.sessionKey).address);
-      appendOps("shepherd_posture", "clear", row.active ? (row.staked ? "active+staked" : "active") : "inactive");
-      return text(row);
+      appendOps(
+        "shepherd_posture",
+        bridge?.browserConnected ? "anon" : "clear",
+        row.active ? (row.staked ? "active+staked" : "active") : "inactive",
+      );
+      return text({ ...row, reads: bridge?.browserConnected ? "anon" : "unavailable" });
     } catch (error) {
       return text(error instanceof Error ? error.message : "Posture read failed.", true);
     }
