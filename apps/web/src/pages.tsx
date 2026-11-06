@@ -69,9 +69,12 @@ export function Landing() {
       <div className="wrap">
         <section className="hero">
           <div>
+            <p className="brand-line">
+              <Mark size={36} /> Shepherd
+            </p>
             <h1>The agent never holds the key that can empty the wallet.</h1>
             <p className="deck">
-              You connect a wallet. Shepherd grants the agent a session the VERIFY frame can refuse. Reads in the console go through Anon-RPC, and the worker still sees the request.
+              You keep the owner key. The agent gets a scoped session the VERIFY frame can refuse. Canonical rejects the policy read; a staked alt mempool can admit it.
             </p>
             <div className="row">
               <Link className="btn btn-lg" to="/console">
@@ -82,24 +85,28 @@ export function Landing() {
               </Link>
             </div>
           </div>
-          <section className="setup" aria-label="Prepare Shepherd">
-            <h2>
-              <Mark size={22} /> Prepare Shepherd
-            </h2>
-            <ul>
-              <li>Connect any injected wallet, or WalletConnect</li>
-              <li>The account deploys on the public devnet</li>
-              <li>The session key is not your seed</li>
-            </ul>
-            <div className="row">
-              <Link className="btn" to="/console/wallet">
-                Connect wallet
-              </Link>
-              <Link className="btn-ghost" to="/how">
-                See the path
-              </Link>
-            </div>
-          </section>
+          <figure className="hero-art">
+            <img src="/hero.png" alt="Shepherd illustration: the owner holds the key while a scoped agent stays limited." width={720} height={960} decoding="async" />
+          </figure>
+        </section>
+
+        <section className="setup wrap-inline" aria-label="Prepare Shepherd">
+          <h2>
+            <Mark size={22} /> Prepare Shepherd
+          </h2>
+          <ul>
+            <li>Connect any injected wallet, or WalletConnect</li>
+            <li>The account deploys on the public alt-mempool devnet</li>
+            <li>The session key is not your seed</li>
+          </ul>
+          <div className="row">
+            <Link className="btn" to="/console/wallet">
+              Connect wallet
+            </Link>
+            <Link className="btn-ghost" to="/how">
+              See the path
+            </Link>
+          </div>
         </section>
 
         <section className="demo" aria-label="What the console decides">
@@ -339,10 +346,15 @@ export function McpPage() {
   return (
     <Site>
       <article className="wrap prose">
-        <h1>Agents can spawn agents</h1>
-        <p>
-          <code>npm run mcp</code> speaks MCP over stdio. Cursor loads it from <code>.cursor/mcp.json</code>. The server uses the owner key inside the process. No tool returns that key.
-        </p>
+        <div className="asset-row">
+          <img className="asset-agent" src="/agent.png" alt="" width={160} height={160} decoding="async" />
+          <div>
+            <h1>Agents can spawn agents</h1>
+            <p>
+              <code>npm run mcp</code> speaks MCP over stdio. Cursor loads it from <code>.cursor/mcp.json</code>. The server uses the owner key inside the process. No tool returns that key.
+            </p>
+          </div>
+        </div>
         <table>
           <thead>
             <tr>
