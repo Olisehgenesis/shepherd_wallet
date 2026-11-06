@@ -23,5 +23,5 @@ export function useShell() {
 /** Existing console pages open the wallet through this. */
 export function useWalletUi() {
   const { openWallet } = useShell();
-  return { openWallet: () => openWallet() };
+  return { openWallet };
 }

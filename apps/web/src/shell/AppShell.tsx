@@ -3,9 +3,12 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CHAIN_ID, CHAIN_NAME } from "../../../../packages/core/src/config.js";
+import { registerApprovalsOpener } from "../extensions";
+import { FirstRun } from "../onboarding";
 import { useStore } from "../store";
 import { Loader, Mark, shortAddress } from "../ui";
 import { WalletModal, type WalletModalView } from "../WalletModal";
+import { WalletUiProvider } from "../wallet-ui";
 import { ApprovalsQueue } from "./ApprovalsQueue";
 import { paths, primaryNav } from "./destinations";
 import { ShellProvider } from "./ShellContext";
@@ -44,79 +47,97 @@ export function AppShell() {
     return () => window.clearTimeout(id);
   }, [store.toast, store.clearToast]);
 
+  useEffect(() => registerApprovalsOpener(() => openApprovals()), [openApprovals]);
+
+  if (!store.ownerAddress) return <FirstRun />;
+
   const accountLabel = store.deployed
     ? `Account ${shortAddress(store.deployed.account)}`
     : store.wallet
       ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
-      : "Connect";
+      : store.ownerAddress
+        ? `Owner · ${shortAddress(store.ownerAddress)}`
+        : "Create owner key";
 
   return (
     <ShellProvider value={{ openWallet, openApprovals }}>
-      <div className="shell">
-        <aside className="side">
-          <Link className="brand side-brand" to={paths.home}>
-            <Mark />
-            Shepherd
-          </Link>
-          <nav aria-label="Primary">
+      <WalletUiProvider value={{ openWallet }}>
+        <div className="shell">
+          <aside className="side">
+            <Link className="brand side-brand" to={paths.home}>
+              <Mark />
+              Shepherd
+            </Link>
+            <nav aria-label="Primary">
+              <PrimaryLinks pathname={location.pathname} />
+            </nav>
+            <p className="side-note">Demo tools (Mempool, Reads) live under You → Demo.</p>
+          </aside>
+          <div className="main">
+            <header className="shell-top">
+              <Badge variant="ok">Alt mempool · {CHAIN_ID}</Badge>
+              <div className="row">
+                {store.pendingApprovalCount > 0 && (
+                  <button className="queue-chip" type="button" onClick={openApprovals}>
+                    {store.pendingApprovalCount} waiting
+                  </button>
+                )}
+                <button className="wallet-chip" type="button" onClick={() => openWallet()}>
+                  {accountLabel}
+                </button>
+              </div>
+            </header>
+            {store.toast && (
+              <div className="callout toast" role="status">
+                {store.toast}
+                <Button size="sm" variant="ghost" onClick={() => store.clearToast()}>
+                  Dismiss
+                </Button>
+              </div>
+            )}
+            {store.wallet && !store.walletOnDevnet && (
+              <div className="callout bad" role="status">
+                Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
+                <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
+                  Switch network
+                </Button>
+              </div>
+            )}
+            {store.ethrex && !store.ethrex.ok && (
+              <div className="callout bad" role="status">
+                Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and
+                deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
+                <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
+                  explorer
+                </a>
+                .
+              </div>
+            )}
+            {store.status && <Loader label={store.status} />}
+            {store.error && (
+              <div className="callout bad" role="alert">
+                {store.error}
+              </div>
+            )}
+            <Outlet />
+            {location.pathname !== paths.home && (
+              <details className="ops-log">
+                <summary>
+                  Ops log <span>{store.logs.length}</span>
+                </summary>
+                <p className="ops-log-note">
+                  Full history is on <Link to={paths.activity}>Activity</Link>.
+                </p>
+              </details>
+            )}
+          </div>
+          <nav className="mobile-tabs" aria-label="Primary">
             <PrimaryLinks pathname={location.pathname} />
           </nav>
-          <p className="side-note">Demo tools (Mempool, Reads) live under You → Demo.</p>
-        </aside>
-        <div className="main">
-          <header className="shell-top">
-            <Badge variant="ok">Alt mempool · {CHAIN_ID}</Badge>
-            <div className="row">
-              {store.pendingApprovalCount > 0 && (
-                <button className="queue-chip" type="button" onClick={openApprovals}>
-                  {store.pendingApprovalCount} waiting
-                </button>
-              )}
-              <button className="wallet-chip" type="button" onClick={() => openWallet()}>
-                {accountLabel}
-              </button>
-            </div>
-          </header>
-          {store.toast && (
-            <div className="callout toast" role="status">
-              {store.toast}
-              <Button size="sm" variant="ghost" onClick={() => store.clearToast()}>
-                Dismiss
-              </Button>
-            </div>
-          )}
-          {store.wallet && !store.walletOnDevnet && (
-            <div className="callout bad" role="status">
-              Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
-              <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
-                Switch network
-              </Button>
-            </div>
-          )}
-          {store.ethrex && !store.ethrex.ok && (
-            <div className="callout bad" role="status">
-              Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and
-              deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
-              <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
-                explorer
-              </a>
-              .
-            </div>
-          )}
-          {store.status && <Loader label={store.status} />}
-          {store.error && (
-            <div className="callout bad" role="alert">
-              {store.error}
-            </div>
-          )}
-          <Outlet />
         </div>
-        <nav className="mobile-tabs" aria-label="Primary">
-          <PrimaryLinks pathname={location.pathname} />
-        </nav>
-      </div>
-      <WalletModal open={walletOpen} onClose={closeWallet} initialView={walletView} />
-      <ApprovalsQueue />
+        <WalletModal open={walletOpen} onClose={closeWallet} initialView={walletView} />
+        <ApprovalsQueue />
+      </WalletUiProvider>
     </ShellProvider>
   );
 }

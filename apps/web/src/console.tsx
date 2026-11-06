@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ALLOW, HIGH } from "../../../packages/core/src/abi.js";
 import { useStore } from "./store";
 import type { RuleMode } from "./persistence";
+import { Home } from "./home";
 import { paths } from "./shell/destinations";
-import { useWalletUi } from "./shell/ShellContext";
 import { Empty, shortAddress } from "./ui";
 
 function formatCap(wei: string | undefined) {
@@ -26,72 +26,7 @@ function formatExpiry(sec: number | string | undefined) {
 }
 
 export function Overview() {
-  const store = useStore();
-  const { openWallet } = useWalletUi();
-  const next = !store.wallet
-    ? { kind: "wallet" as const, label: "Connect a wallet", title: "Start by connecting a wallet", body: "Shepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set." }
-    : !store.deployed
-      ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare funds the frame signer from the shared genesis key, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
-      : !store.live?.active
-        ? { kind: "link" as const, href: paths.session, label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. Set the value cap and TTL with the agent." }
-        : !store.live.staked
-          ? { kind: "link" as const, href: paths.mempool, label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
-          : { kind: "link" as const, href: paths.intents, label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. Edit policy or spawn child agents when you need more than the demo vault calls." };
-
-  return (
-    <>
-      <header className="page-head">
-        <h1>Home</h1>
-        <p>Four steps. The console only offers the one you have not finished.</p>
-      </header>
-      <Card>
-        <CardHeader>
-          <CardTitle>{next.title.toUpperCase()}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          <p className="lede" style={{ margin: 0 }}>
-            {next.body}
-          </p>
-          {store.live && (
-            <p className="lede" style={{ margin: 0 }}>
-              Balance {store.live.balance} ETH, read {store.live.balanceRoute}. Session {store.live.active ? "active" : "inactive"}. Stake{" "}
-              {store.live.staked ? "present" : "absent"}. Cap {formatCap(store.live.valueCapWei)}. Policy rules {store.policyRules.length}. Agents{" "}
-              {store.agents.length}.
-            </p>
-          )}
-          <div className="row">
-            {next.kind === "wallet" ? (
-              <Button onClick={openWallet}>{next.label}</Button>
-            ) : next.kind === "link" ? (
-              <Button asChild>
-                <Link to={next.href}>{next.label}</Link>
-              </Button>
-            ) : (
-              <Button disabled={store.busy} onClick={() => void store.prepare()}>
-                {next.label}
-              </Button>
-            )}
-            {store.deployed && (
-              <Button variant="ghost" disabled={store.busy} onClick={() => void store.refresh()}>
-                Refresh
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>TRUST</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          <p className="lede" style={{ margin: 0 }}>
-            The worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.
-          </p>
-          <Link to="/trust">Read the trust page</Link>
-        </CardContent>
-      </Card>
-    </>
-  );
+  return <Home />;
 }
 
 export function WalletPage() {

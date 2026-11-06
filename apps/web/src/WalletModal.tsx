@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import { formatEther, isAddress, type Address } from "viem";
-import { CHAIN_ID, CHAIN_NAME, ETHREX_URL, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
+import { CHAIN_ID, CHAIN_NAME, EXPLORER_URL } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
+import type { WalletSurface } from "./wallet-ui";
 
-export type WalletModalView = "home" | "send" | "receive" | "signers" | "connect" | "backup";
-
-type View = WalletModalView;
+export type WalletModalView = WalletSurface;
+type View = WalletSurface;
 
 export function WalletModal({
   open,
   onClose,
-  initialView,
+  initialView = null,
 }: {
   open: boolean;
   onClose: () => void;
-  initialView?: WalletModalView;
+  initialView?: View | null;
 }) {
   const store = useStore();
   const [view, setView] = useState<View>("home");
@@ -65,10 +65,12 @@ export function WalletModal({
         ? "Receive"
         : view === "signers"
           ? "Signers"
-          : view === "backup"
-            ? "Frame signer backup"
+            : view === "backup"
+            ? "Back up owner key"
             : view === "connect"
-              ? "Connect wallet"
+              ? store.ownerAddress
+                ? "Connect a browser wallet"
+                : "Start"
               : "Wallet";
 
   return (
@@ -82,21 +84,28 @@ export function WalletModal({
       {view === "connect" && (
         <>
           <p>
-            Connect a browser wallet. Shepherd will add and switch it to <strong>{CHAIN_NAME}</strong> (chain {CHAIN_ID}). Frame hashes still use the owner signer in this tab.
+            {store.wallets.length === 0
+              ? "No browser extension detected in this environment. Create an owner key in this tab, then back it up before any grant."
+              : "A browser wallet is for identity and deposits. It cannot sign frame calls. The owner key in this tab does."}
           </p>
-          <p className="lede">
-            ethrex {ETHREX_URL.replace("https://", "")} · sidecar {GATEWAY_URL.replace("https://", "")}
-          </p>
+          {!store.ownerAddress && (
+            <button
+              className="onboard-choice primary"
+              type="button"
+              disabled={store.busy}
+              onClick={() => {
+                store.ensureOwner();
+                setView("backup");
+              }}
+            >
+              <strong>Create owner key</strong>
+              <span>Recommended here — stays in this browser until you back it up</span>
+            </button>
+          )}
           <div className="modal-section">
-            <h3>Browser wallets</h3>
-            <p className="lede">
-              Choosing a wallet opens its account picker. Shepherd&apos;s frame signer (owner key in this tab) is separate —
-              MetaMask is for deposits and identity, not frame digests.
-            </p>
+            <h3>Connect a browser wallet</h3>
             <div className="wallet-list">
-              {store.wallets.length === 0 && (
-                <p>No EIP-6963 wallet announced yet. Open MetaMask or another extension, then try again.</p>
-              )}
+              {store.wallets.length === 0 && <p>No browser extension detected in this environment.</p>}
               {store.wallets.map((wallet) => (
                 <button
                   key={wallet.uuid}
@@ -106,36 +115,20 @@ export function WalletModal({
                   onClick={() => void pick(wallet.uuid, wallet.name)}
                 >
                   {wallet.name}
-                  <span>Connect / switch account</span>
+                  <span>Identity and deposits</span>
                 </button>
               ))}
+              {projectId ? (
+                <button className="wallet-option" type="button" disabled={store.busy} onClick={() => void pickWc()}>
+                  WalletConnect
+                  <span>QR code</span>
+                </button>
+              ) : (
+                <p>WalletConnect needs VITE_WALLETCONNECT_PROJECT_ID.</p>
+              )}
             </div>
           </div>
-          <div className="modal-section">
-            <h3>WalletConnect</h3>
-            {projectId ? (
-              <button className="wallet-option" type="button" disabled={store.busy} onClick={() => void pickWc()}>
-                WalletConnect
-                <span>QR code</span>
-              </button>
-            ) : (
-              <p>Set VITE_WALLETCONNECT_PROJECT_ID to enable WalletConnect.</p>
-            )}
-          </div>
-          <div className="modal-section">
-            <h3>Or continue without a browser wallet</h3>
-            <button
-              className="btn"
-              type="button"
-              disabled={store.busy}
-              onClick={() => {
-                store.ensureOwner();
-                setView("home");
-              }}
-            >
-              Create frame signer
-            </button>
-          </div>
+          <p className="onboard-fine">Keys live in this tab until Backup. Closing the tab without Backup deletes them.</p>
         </>
       )}
 
@@ -445,7 +438,7 @@ export function WalletModal({
           <div className="row">
             {!store.ownerAddress && (
               <button className="btn" type="button" onClick={() => store.ensureOwner()}>
-                Create frame signer
+                Create owner key
               </button>
             )}
             {store.ownerAddress && (
@@ -473,9 +466,10 @@ export function WalletModal({
       {view === "backup" && (
         <>
           <p className="warn">
-            The browser wallet cannot sign EIP-8141 digests. The frame signer lives in this tab&apos;s sessionStorage. Export it
-            before clearing site data. Never paste a mainnet key here.
+            Keys live in this tab until Backup. Closing the tab without Backup deletes them. A browser wallet cannot sign
+            frame calls. Never paste a mainnet key here.
           </p>
+          {store.ownerBackedUp && <p>This owner key is marked backed up in this tab. You can grant an agent.</p>}
           <div className="modal-section">
             <h3>Export</h3>
             <div className="row">
@@ -489,11 +483,18 @@ export function WalletModal({
                     return;
                   }
                   setExportShown(true);
-                  void copy("export", key);
+                  void copy("export", key)
+                    .then(() => store.markOwnerBackedUp())
+                    .catch(() => setCopied(""));
                 }}
               >
-                {copied === "export" ? "Copied private key" : "Copy frame signer key"}
+                {copied === "export" ? "Copied private key" : "Copy owner key"}
               </button>
+              {exportShown && !store.ownerBackedUp && (
+                <button className="btn-ghost" type="button" onClick={() => store.markOwnerBackedUp()}>
+                  I have saved this key
+                </button>
+              )}
               {exportShown && (
                 <button className="btn-ghost" type="button" onClick={() => setExportShown(false)}>
                   Hide
