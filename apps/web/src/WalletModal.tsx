@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { formatEther, isAddress, type Address } from "viem";
 import { CHAIN_ID, CHAIN_NAME, EXPLORER_URL } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
+import { ReviewSheet } from "./confirm";
+import { sendReview } from "./reviewCopy";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
 import type { WalletSurface } from "./wallet-ui";
@@ -26,11 +28,13 @@ export function WalletModal({
   const [copied, setCopied] = useState("");
   const [importKey, setImportKey] = useState("");
   const [exportShown, setExportShown] = useState(false);
+  const [reviewSend, setReviewSend] = useState(false);
   const projectId = walletProjectId();
 
   useEffect(() => {
     if (!open) return;
     setView(initialView ?? (store.wallet || store.ownerAddress || store.deployed ? "home" : "connect"));
+    setReviewSend(false);
     void store.refreshWallet();
   }, [open, initialView]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -74,6 +78,7 @@ export function WalletModal({
               : "Wallet";
 
   return (
+    <>
     <Modal title={title} onClose={onClose} wide>
       {view !== "home" && view !== "connect" && (
         <button className="btn-ghost wallet-back" type="button" onClick={() => setView("home")}>
@@ -295,16 +300,9 @@ export function WalletModal({
               className="btn"
               type="button"
               disabled={store.busy || !isAddress(to) || !amount}
-              onClick={() =>
-                void store.sendEth(to as Address, amount).then((ok) => {
-                  if (ok) {
-                    setAmount("");
-                    setView("home");
-                  }
-                })
-              }
+              onClick={() => setReviewSend(true)}
             >
-              Review and send
+              Review
             </button>
           </div>
         </>
@@ -537,5 +535,23 @@ export function WalletModal({
         </>
       )}
     </Modal>
+    <ReviewSheet
+      copy={reviewSend && isAddress(to) ? sendReview(to as Address, amount) : null}
+      busy={store.busy}
+      error={store.error}
+      onBack={() => {
+        if (!store.busy) setReviewSend(false);
+      }}
+      onConfirm={() => {
+        void store.sendEth(to as Address, amount).then((ok) => {
+          if (ok) {
+            setReviewSend(false);
+            setAmount("");
+            setView("home");
+          }
+        });
+      }}
+    />
+    </>
   );
 }

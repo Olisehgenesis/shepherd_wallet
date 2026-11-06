@@ -354,8 +354,9 @@ export function Docs() {
             the receipt lands.
           </li>
           <li>
-            Open <Link to={paths.session}>Agents → Session</Link>, set value cap and TTL, then issue a session key.
-            Reveal it only if another process on this machine needs it.
+            Open <Link to={paths.session}>Agents → Session</Link>, set the value cap and the TTL, then issue a session key.
+            TTL is stored and shown; this account does not enforce it on-chain. Revoke is what stops the session. Reveal
+            the key once if another process needs it. The key stays in this tab until you revoke.
           </li>
           <li>
             Open <Link to={paths.agents}>Agents</Link> to grant a session, edit what it may do, and spawn or revoke

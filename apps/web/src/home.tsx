@@ -167,7 +167,7 @@ export function Home() {
                   className="home-btn danger"
                   type="button"
                   disabled={store.busy}
-                  onClick={() => requestRevoke(() => store.revokeSession())}
+                  onClick={() => requestRevoke(() => { void store.revokeSession(); })}
                 >
                   Revoke
                 </button>
