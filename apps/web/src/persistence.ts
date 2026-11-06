@@ -25,6 +25,8 @@ export interface AgentRecord {
   sessionKey: Hex;
   valueCap: string;
   expiry: string;
+  /** Owner-facing name. Ids stay the stable key. */
+  name?: string;
 }
 
 export interface PendingApproval {

@@ -28,8 +28,9 @@ export function App() {
           <Route path="/console" element={<ConsoleShell><Overview /></ConsoleShell>} />
           <Route path="/console/wallet" element={<ConsoleShell><WalletPage /></ConsoleShell>} />
           <Route path="/console/session" element={<ConsoleShell><SessionPage /></ConsoleShell>} />
-          <Route path="/console/policy" element={<ConsoleShell><PolicyPage /></ConsoleShell>} />
+          <Route path="/console/policy" element={<Navigate to="/console/agents/root/permissions" replace />} />
           <Route path="/console/agents" element={<ConsoleShell><AgentsPage /></ConsoleShell>} />
+          <Route path="/console/agents/:agentId/permissions" element={<ConsoleShell><PolicyPage /></ConsoleShell>} />
           <Route path="/console/intents" element={<ConsoleShell><IntentsPage /></ConsoleShell>} />
           <Route path="/console/approvals" element={<ConsoleShell><ApprovalsPage /></ConsoleShell>} />
           <Route path="/console/reads" element={<ConsoleShell><ReadsPage /></ConsoleShell>} />

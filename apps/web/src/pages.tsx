@@ -358,8 +358,8 @@ export function Docs() {
             only if another process on this machine needs it.
           </li>
           <li>
-            Open <Link to="/console/policy">Policy</Link> to add allow / high-risk rules. Open{" "}
-            <Link to="/console/agents">Agents</Link> to spawn or revoke child sessions.
+            Open <Link to="/console/agents">Agents</Link> to grant a session, edit what it may do, and spawn or revoke
+            children. Permissions use allow, needs co-sign, or deny.
           </li>
           <li>
             Open <Link to="/console/mempool">Mempool</Link>, stake 0.012 ETH, then send the ping to the alt mempool. The

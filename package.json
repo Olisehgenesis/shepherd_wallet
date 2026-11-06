@@ -14,6 +14,7 @@
     "agent": "tsx apps/agent/src/cli.ts",
     "mcp": "tsx apps/mcp/src/index.ts",
     "test:scope": "tsx apps/mcp/src/scope.test.ts",
+    "test:agents": "tsx apps/web/src/agents/copy.test.ts",
     "dev": "vite --config apps/web/vite.config.ts",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && tsc -p apps/agent/tsconfig.json --noEmit && tsc -p apps/web/tsconfig.json --noEmit && tsc -p apps/mcp/tsconfig.json --noEmit"
