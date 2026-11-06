@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { formatEther } from "viem";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,11 @@ import { ALLOW, HIGH } from "../../../packages/core/src/abi.js";
 import { CHAIN_ID, CHAIN_NAME } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import type { RuleMode } from "./persistence";
+import { Home } from "./home";
+import { FirstRun } from "./onboarding";
 import { Empty, Loader, Mark, shortAddress } from "./ui";
 import { WalletModal } from "./WalletModal";
+import { WalletUiProvider, type WalletSurface } from "./wallet-ui";
 
 const nav = [
   ["/console", "Overview"],
@@ -23,14 +26,6 @@ const nav = [
   ["/console/mempool", "Mempool"],
   ["/console/activity", "Activity"],
 ] as const;
-
-const WalletUi = createContext<{ openWallet: () => void } | null>(null);
-
-function useWalletUi() {
-  const value = useContext(WalletUi);
-  if (!value) throw new Error("Wallet UI is missing");
-  return value;
-}
 
 function tone(ok: boolean | undefined, wait = false): "ok" | "bad" | "wait" | "info" {
   if (wait) return "wait";
@@ -53,14 +48,25 @@ function formatExpiry(sec: number | string | undefined) {
   return new Date(value * 1000).toLocaleString();
 }
 
+export function ConsoleGate({ children }: { children: React.ReactNode }) {
+  const store = useStore();
+  if (!store.ownerAddress) return <FirstRun />;
+  return <ConsoleShell>{children}</ConsoleShell>;
+}
+
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const store = useStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [walletOpen, setWalletOpen] = useState(false);
-  const openWallet = useCallback(() => setWalletOpen(true), []);
+  const [walletView, setWalletView] = useState<WalletSurface | null>(null);
+  const openWallet = useCallback((view?: WalletSurface) => {
+    setWalletView(view ?? null);
+    setWalletOpen(true);
+  }, []);
   const closeWallet = useCallback(() => {
     setWalletOpen(false);
+    setWalletView(null);
     if (location.pathname === "/console/wallet") navigate("/console", { replace: true });
   }, [location.pathname, navigate]);
 
@@ -75,7 +81,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
   }, [store.toast, store.clearToast]);
 
   return (
-    <WalletUi.Provider value={{ openWallet }}>
+    <WalletUiProvider value={{ openWallet }}>
       <div className="shell">
         <aside className="side">
           <Link className="brand side-brand" to="/">
@@ -90,7 +96,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 {to === "/console/approvals" && store.pendingApprovalCount > 0 ? ` (${store.pendingApprovalCount})` : ""}
               </NavLink>
             ))}
-            <button className="side-wallet" type="button" onClick={openWallet}>
+            <button className="side-wallet" type="button" onClick={() => openWallet()}>
               Wallet
             </button>
           </nav>
@@ -117,7 +123,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               <Badge variant={store.anonState === "ready" ? "ok" : store.anonState === "failed" ? "bad" : "wait"}>
                 {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
               </Badge>
-              <Badge variant="info">{store.anonShare}% anon reads</Badge>
+              <Badge variant="info" title="The worker sees request bodies. The reference worker does not unlink your IP. Keys, cookies, and the DOM stay in this tab.">
+                <Link to="/trust">Not fully private reads</Link>
+              </Badge>
               {store.pendingApprovalCount > 0 && (
                 <Badge variant="wait">
                   <Link to="/console/approvals">{store.pendingApprovalCount} pending</Link>
@@ -136,15 +144,17 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 </Button>
               )}
               <button
-                className={store.deployed || store.wallet ? "wallet-chip connected" : "btn"}
+                className={store.deployed || store.wallet || store.ownerAddress ? "wallet-chip connected" : "btn"}
                 type="button"
-                onClick={openWallet}
+                onClick={() => openWallet()}
               >
                 {store.wallet
                   ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
                   : store.deployed
                     ? `Account · ${shortAddress(store.deployed.account)}`
-                    : "Connect wallet"}
+                    : store.ownerAddress
+                      ? `Owner · ${shortAddress(store.ownerAddress)}`
+                      : "Create owner key"}
               </button>
             </div>
           </header>
@@ -180,120 +190,60 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
           {children}
-          <Card>
-            <CardHeader>
-              <CardTitle>OPS LOG</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Method</th>
-                    <th>Route</th>
-                    <th>Verdict</th>
-                    <th>Link</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {store.logs.length === 0 && (
+          {location.pathname !== "/console" && (
+            <details className="ops-log">
+              <summary>
+                Ops log <span>{store.logs.length}</span>
+              </summary>
+              <p className="ops-log-note">
+                Full history is on <Link to="/console/activity">Activity</Link>.
+              </p>
+              <div className="ops-log-body">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan={4}>No calls yet. The first one is the harness reading the chain id.</td>
+                      <th>Method</th>
+                      <th>Route</th>
+                      <th>Verdict</th>
+                      <th>Link</th>
                     </tr>
-                  )}
-                  {store.logs.map((row) => (
-                    <tr key={row.id}>
-                      <td>{row.method}</td>
-                      <td>{row.route}</td>
-                      <td>{row.verdict}</td>
-                      <td>
-                        {row.explorerUrl ? (
-                          <a href={row.explorerUrl} target="_blank" rel="noreferrer">
-                            Explorer
-                          </a>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
+                  </thead>
+                  <tbody>
+                    {store.logs.length === 0 && (
+                      <tr>
+                        <td colSpan={4}>No calls yet. History of admits and rejects lives on Activity.</td>
+                      </tr>
+                    )}
+                    {store.logs.map((row) => (
+                      <tr key={row.id}>
+                        <td>{row.method}</td>
+                        <td>{row.route}</td>
+                        <td>{row.verdict}</td>
+                        <td>
+                          {row.explorerUrl ? (
+                            <a href={row.explorerUrl} target="_blank" rel="noreferrer">
+                              Explorer
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          )}
         </div>
       </div>
-      <WalletModal open={walletOpen} onClose={closeWallet} />
-    </WalletUi.Provider>
+      <WalletModal open={walletOpen} initialView={walletView} onClose={closeWallet} />
+    </WalletUiProvider>
   );
 }
 
 export function Overview() {
-  const store = useStore();
-  const { openWallet } = useWalletUi();
-  const next = !store.wallet
-    ? { kind: "wallet" as const, label: "Connect a wallet", title: "Start by connecting a wallet", body: "Shepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set." }
-    : !store.deployed
-      ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare funds the frame signer from the shared genesis key, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
-      : !store.live?.active
-        ? { kind: "link" as const, href: "/console/session", label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. Set the value cap and TTL on the Session page." }
-        : !store.live.staked
-          ? { kind: "link" as const, href: "/console/mempool", label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
-          : { kind: "link" as const, href: "/console/intents", label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. Edit policy or spawn child agents when you need more than the demo vault calls." };
-
-  return (
-    <>
-      <header className="page-head">
-        <h1>Overview</h1>
-        <p>Four steps. The console only offers the one you have not finished.</p>
-      </header>
-      <Card>
-        <CardHeader>
-          <CardTitle>{next.title.toUpperCase()}</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          <p className="lede" style={{ margin: 0 }}>
-            {next.body}
-          </p>
-          {store.live && (
-            <p className="lede" style={{ margin: 0 }}>
-              Balance {store.live.balance} ETH, read {store.live.balanceRoute}. Session {store.live.active ? "active" : "inactive"}. Stake{" "}
-              {store.live.staked ? "present" : "absent"}. Cap {formatCap(store.live.valueCapWei)}. Policy rules {store.policyRules.length}. Agents{" "}
-              {store.agents.length}.
-            </p>
-          )}
-          <div className="row">
-            {next.kind === "wallet" ? (
-              <Button onClick={openWallet}>{next.label}</Button>
-            ) : next.kind === "link" ? (
-              <Button asChild>
-                <Link to={next.href}>{next.label}</Link>
-              </Button>
-            ) : (
-              <Button disabled={store.busy} onClick={() => void store.prepare()}>
-                {next.label}
-              </Button>
-            )}
-            {store.deployed && (
-              <Button variant="ghost" disabled={store.busy} onClick={() => void store.refresh()}>
-                Refresh
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>TRUST</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-2">
-          <p className="lede" style={{ margin: 0 }}>
-            The worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.
-          </p>
-          <Link to="/trust">Read the trust page</Link>
-        </CardContent>
-      </Card>
-    </>
-  );
+  return <Home />;
 }
 
 export function WalletPage() {
@@ -315,7 +265,7 @@ export function SessionPage() {
     return (
       <Empty
         title="No account yet"
-        body="Prepare the account on Overview. A session is granted to that account, not to a placeholder."
+        body="Prepare the account on Home. A session is granted to that account, not to a placeholder."
         action={
           <Button asChild>
             <Link to="/console">Go to Overview</Link>
@@ -1070,7 +1020,7 @@ export function MempoolPage() {
     return (
       <Empty
         title="No account to stake"
-        body="Prepare the account on Overview. Stake is an owner-path frame, and the ping is an agent-path frame."
+        body="Prepare the account on Home. Stake is an owner-path frame, and the ping is an agent-path frame."
         action={
           <Button asChild>
             <Link to="/console">Go to Overview</Link>

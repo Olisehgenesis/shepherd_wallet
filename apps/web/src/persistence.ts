@@ -7,6 +7,7 @@ const APPROVALS = "shepherd.approvals";
 const ACTIVITY = "shepherd.activity";
 const CONNECTED = "shepherd.sessionConnected";
 const SPENT = "shepherd.sessionSpent";
+const OWNER_BACKED_UP = "shepherd.ownerBackedUp";
 
 export type RuleMode = 0 | 1 | 2;
 
@@ -134,6 +135,18 @@ export function appendActivity(account: Address, row: Omit<ActivityRow, "id" | "
   all[account.toLowerCase()] = list;
   writeJson(ACTIVITY, all);
   return list;
+}
+
+export function loadOwnerBackedUp(): boolean {
+  return sessionStorage.getItem(OWNER_BACKED_UP) === "1";
+}
+
+export function markOwnerBackedUpStorage() {
+  sessionStorage.setItem(OWNER_BACKED_UP, "1");
+}
+
+export function clearOwnerBackedUp() {
+  sessionStorage.removeItem(OWNER_BACKED_UP);
 }
 
 export function loadSessionConnected(): boolean {

@@ -3,7 +3,7 @@ import {
   ActivityPage,
   AgentsPage,
   ApprovalsPage,
-  ConsoleShell,
+  ConsoleGate,
   IntentsPage,
   MempoolPage,
   Overview,
@@ -25,16 +25,16 @@ export function App() {
           <Route path="/docs" element={<Docs />} />
           <Route path="/trust" element={<Trust />} />
           <Route path="/mcp" element={<McpPage />} />
-          <Route path="/console" element={<ConsoleShell><Overview /></ConsoleShell>} />
-          <Route path="/console/wallet" element={<ConsoleShell><WalletPage /></ConsoleShell>} />
-          <Route path="/console/session" element={<ConsoleShell><SessionPage /></ConsoleShell>} />
-          <Route path="/console/policy" element={<ConsoleShell><PolicyPage /></ConsoleShell>} />
-          <Route path="/console/agents" element={<ConsoleShell><AgentsPage /></ConsoleShell>} />
-          <Route path="/console/intents" element={<ConsoleShell><IntentsPage /></ConsoleShell>} />
-          <Route path="/console/approvals" element={<ConsoleShell><ApprovalsPage /></ConsoleShell>} />
-          <Route path="/console/reads" element={<ConsoleShell><ReadsPage /></ConsoleShell>} />
-          <Route path="/console/mempool" element={<ConsoleShell><MempoolPage /></ConsoleShell>} />
-          <Route path="/console/activity" element={<ConsoleShell><ActivityPage /></ConsoleShell>} />
+          <Route path="/console" element={<ConsoleGate><Overview /></ConsoleGate>} />
+          <Route path="/console/wallet" element={<ConsoleGate><WalletPage /></ConsoleGate>} />
+          <Route path="/console/session" element={<ConsoleGate><SessionPage /></ConsoleGate>} />
+          <Route path="/console/policy" element={<ConsoleGate><PolicyPage /></ConsoleGate>} />
+          <Route path="/console/agents" element={<ConsoleGate><AgentsPage /></ConsoleGate>} />
+          <Route path="/console/intents" element={<ConsoleGate><IntentsPage /></ConsoleGate>} />
+          <Route path="/console/approvals" element={<ConsoleGate><ApprovalsPage /></ConsoleGate>} />
+          <Route path="/console/reads" element={<ConsoleGate><ReadsPage /></ConsoleGate>} />
+          <Route path="/console/mempool" element={<ConsoleGate><MempoolPage /></ConsoleGate>} />
+          <Route path="/console/activity" element={<ConsoleGate><ActivityPage /></ConsoleGate>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </StoreProvider>

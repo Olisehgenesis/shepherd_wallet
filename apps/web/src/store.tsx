@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import {
   formatEther,
@@ -57,12 +57,15 @@ import {
   addSpentWei,
   appendActivity,
   clearSpentWei,
+  clearOwnerBackedUp,
   loadActivity,
   loadAgents,
   loadApprovals,
+  loadOwnerBackedUp,
   loadRules,
   loadSessionConnected,
   loadSpentWei,
+  markOwnerBackedUpStorage,
   markSessionConnected,
   saveAgents,
   saveApprovals,
@@ -202,6 +205,7 @@ interface Store {
   pendingApprovalCount: number;
   activity: ActivityRow[];
   sessionConnected: boolean;
+  ownerBackedUp: boolean;
   maxDepth: number;
   maxChildren: number;
   connect: (uuid: string, name: string) => Promise<boolean>;
@@ -239,6 +243,7 @@ interface Store {
   clearToast: () => void;
   exportOwnerKey: () => string | null;
   importOwnerKey: (hex: string) => void;
+  markOwnerBackedUp: () => void;
   markAgentConnected: () => void;
 }
 
@@ -281,7 +286,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [approvals, setApprovals] = useState<PendingApproval[]>([]);
   const [activity, setActivity] = useState<ActivityRow[]>([]);
+  const working = useRef(false);
   const [sessionConnected, setSessionConnected] = useState(() => loadSessionConnected());
+  const [ownerBackedUp, setOwnerBackedUp] = useState(() => loadOwnerBackedUp());
 
   const ownerAddress = ownerKey ? privateKeyToAccount(ownerKey).address : null;
   const sessionAddress = sessionKey ? privateKeyToAccount(sessionKey).address : null;
@@ -385,6 +392,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [logs]);
 
   async function work(label: string, task: () => Promise<void>): Promise<boolean> {
+    if (working.current) return false;
+    working.current = true;
     setBusy(true);
     setError("");
     setStatus(label);
@@ -395,6 +404,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setError(reason instanceof Error ? reason.message : "That step failed.");
       return false;
     } finally {
+      working.current = false;
       setBusy(false);
       setStatus("");
     }
@@ -549,12 +559,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallet?.address, wallet?.uuid]);
 
+  function persistNewOwner(key: Hex) {
+    sessionStorage.setItem(OWNER, key);
+    setOwnerKey(key);
+    clearOwnerBackedUp();
+    setOwnerBackedUp(false);
+  }
+
   function ensureOwner() {
     if (ownerKey) return privateKeyToAccount(ownerKey).address;
     const key = generatePrivateKey();
-    sessionStorage.setItem(OWNER, key);
-    setOwnerKey(key);
+    persistNewOwner(key);
     return privateKeyToAccount(key).address;
+  }
+
+  function markOwnerBackedUp() {
+    if (!ownerKey) return;
+    const already = ownerBackedUp;
+    markOwnerBackedUpStorage();
+    setOwnerBackedUp(true);
+    setError("");
+    if (!already) notify("Owner key backed up. You can grant an agent.");
+  }
+
+  function requireBackup(): boolean {
+    if (ownerBackedUp) return true;
+    setError("Back up the owner key before the first grant. Closing this tab deletes it.");
+    notify("Back up the owner key before the first grant.");
+    return false;
   }
 
   async function connect(uuid: string, name: string) {
@@ -606,8 +638,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setStatus("Checking ethrex is mining");
       await assertChainLive();
       const key = ownerKey ?? generatePrivateKey();
-      sessionStorage.setItem(OWNER, key);
-      setOwnerKey(key);
+      if (!ownerKey) persistNewOwner(key);
       const owner = privateKeyToAccount(key).address;
       setStatus("Funding frame signer from shared genesis key");
       await ensureFunds(owner);
@@ -628,6 +659,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function issue(limits?: SessionLimitsInput) {
     if (!deployed || !ownerKey) return;
+    if (!requireBackup()) return;
     await work("Granting the session", async () => {
       const key = sessionKey ?? generatePrivateKey();
       sessionStorage.setItem(SESSION, key);
@@ -852,10 +884,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   async function faucetOwner() {
     return work("Funding frame signer from shared genesis", async () => {
       const key = ownerKey ?? generatePrivateKey();
-      if (!ownerKey) {
-        sessionStorage.setItem(OWNER, key);
-        setOwnerKey(key);
-      }
+      if (!ownerKey) persistNewOwner(key);
       const owner = privateKeyToAccount(key).address;
       const result = await ensureFunds(owner);
       push("fundFromShared", "clear", result);
@@ -925,6 +954,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function spawnAgent(input: SpawnInput) {
     if (!deployed || !ownerKey || !sessionKey) return null;
+    if (!requireBackup()) return null;
     let created: string | null = null;
     await work("Spawning child agent", async () => {
       const parentId = input.parentId || "root";
@@ -1076,6 +1106,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!trimmed.startsWith("0x") || trimmed.length !== 66) throw new Error("Owner key must be a 32-byte hex private key.");
     sessionStorage.setItem(OWNER, trimmed);
     setOwnerKey(trimmed);
+    markOwnerBackedUpStorage();
+    setOwnerBackedUp(true);
     notify("Frame signer imported into this tab.");
   }
 
@@ -1108,6 +1140,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     pendingApprovalCount,
     activity,
     sessionConnected,
+    ownerBackedUp,
     maxDepth: MAX_DEPTH,
     maxChildren: MAX_CHILDREN,
     connect,
@@ -1145,6 +1178,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     clearToast: () => setToast(""),
     exportOwnerKey,
     importOwnerKey,
+    markOwnerBackedUp,
     markAgentConnected,
   };
 
