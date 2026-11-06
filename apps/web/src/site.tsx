@@ -1,79 +1,120 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
+import { Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Mark } from "./ui";
 
 const links = [
-  ["/how", "HOW"],
-  ["/docs", "DOCS"],
-  ["/trust", "TRUST"],
-  ["/mcp", "MCP"],
+  ["/how", "How it works"],
+  ["/trust", "Privacy"],
+  ["/docs", "Documentation"],
+  ["/console", "Console"],
 ] as const;
+
+const consoleLinks = [
+  ["/console", "Overview"],
+  ["/console/wallet", "Connect wallet"],
+  ["/console/session", "Session"],
+  ["/console/policy", "Policy"],
+  ["/console/agents", "Agents"],
+  ["/console/intents", "Intents"],
+  ["/console/approvals", "Approvals"],
+  ["/console/reads", "Reads"],
+  ["/console/mempool", "Mempool"],
+  ["/console/activity", "Activity"],
+] as const;
+
+function NavItems({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <>
+      {links.map(([to, label]) => (
+        <NavLink key={to} to={to} className="nav-link" onClick={onNavigate}>
+          {label}
+        </NavLink>
+      ))}
+    </>
+  );
+}
 
 export function Site({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
+  const close = () => setOpen(false);
+
   return (
     <div className="site">
       <a className="skip" href="#content">
         Skip to content
       </a>
-      <header className="nav wrap">
-        <Link to="/" className="brand" onClick={() => setOpen(false)}>
-          <Mark />
-          <span className="font-pixel text-[10px] tracking-wide">SHEPHERD</span>
-        </Link>
-        <button className="nav-toggle" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
-          {open ? "Close" : "Menu"}
-        </button>
-        <nav className={open ? "nav-links open" : "nav-links"} aria-label="Site">
-          <details className="menu">
-            <summary>CONSOLE</summary>
-            <div>
-              <Link to="/console" onClick={() => setOpen(false)}>
-                Overview
-              </Link>
-              <Link to="/console/wallet" onClick={() => setOpen(false)}>
-                Connect wallet
-              </Link>
-              <Link to="/console/session" onClick={() => setOpen(false)}>
-                Session
-              </Link>
-              <Link to="/console/intents" onClick={() => setOpen(false)}>
-                Intents
-              </Link>
-              <Link to="/console/reads" onClick={() => setOpen(false)}>
-                Reads
-              </Link>
-              <Link to="/console/mempool" onClick={() => setOpen(false)}>
-                Mempool
-              </Link>
-            </div>
-          </details>
-          {links.map(([to, label]) => (
-            <NavLink key={to} to={to} onClick={() => setOpen(false)}>
-              {label}
-            </NavLink>
-          ))}
-          <Link className="btn nav-cta" to="/console" onClick={() => setOpen(false)}>
-            START PROJECT
+      <header className="nav-bar">
+        <div className="wrap nav">
+          <Link to="/" className="brand" onClick={close}>
+            <Mark />
+            Shepherd
           </Link>
-        </nav>
+
+          <nav className="nav-desktop" aria-label="Site">
+            <NavItems />
+            <Button asChild size="sm" className="ml-2">
+              <Link to="/console/wallet">Connect Wallet</Link>
+            </Button>
+          </nav>
+
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="sm" className="nav-mobile-trigger" aria-label="Open menu">
+                <Menu className="size-4" />
+                Menu
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right">
+              <SheetHeader>
+                <SheetTitle>Shepherd</SheetTitle>
+                <SheetDescription>Privacy infrastructure for agent calls.</SheetDescription>
+              </SheetHeader>
+              <Separator />
+              <nav className="nav-sheet" aria-label="Mobile">
+                <NavItems onNavigate={close} />
+                <Separator className="my-2" />
+                <p className="nav-sheet-label">Console</p>
+                {consoleLinks.map(([to, label]) => (
+                  <Link key={to} to={to} onClick={close}>
+                    {label}
+                  </Link>
+                ))}
+                <Button asChild className="mt-3 w-full">
+                  <Link to="/console/wallet" onClick={close}>
+                    Connect Wallet
+                  </Link>
+                </Button>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
       </header>
       <main id="content">{children}</main>
       <footer className="foot">
-        <div className="wrap foot-row">
-          <Link to="/" className="brand">
-            <Mark size={22} />
-            <span className="font-pixel text-[9px]">SHEPHERD</span>
-          </Link>
+        <div className="wrap foot-grid">
+          <div className="foot-brand">
+            <Link to="/" className="brand">
+              <Mark size={22} />
+              Shepherd
+            </Link>
+            <p>Privacy infrastructure for agent calls. Devnet only.</p>
+          </div>
           <nav aria-label="Footer">
             {links.map(([to, label]) => (
               <Link key={to} to={to}>
                 {label}
               </Link>
             ))}
-            <Link to="/console">CONSOLE</Link>
+            <Link to="/mcp">MCP</Link>
+            <Link to="/console/wallet">Connect Wallet</Link>
           </nav>
-          <p>Devnet only. No tracker. The worker still sees Anon-RPC request bodies.</p>
+          <p className="foot-note">
+            No tracker. Anon-RPC covers browser <code>eth_*</code> reads — the worker can still see request bodies.
+          </p>
         </div>
       </footer>
     </div>

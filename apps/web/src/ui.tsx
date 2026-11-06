@@ -73,7 +73,9 @@ export function Empty({
 }) {
   return (
     <section className="card empty">
-      <img className="empty-art" src="/agent.png" alt="" width={96} height={96} decoding="async" />
+      <div className="empty-art-wrap">
+        <img className="empty-art" src="/agent.png?v=3d" alt="" width={112} height={112} decoding="async" />
+      </div>
       <h2>{title}</h2>
       <p>{body}</p>
       {action}

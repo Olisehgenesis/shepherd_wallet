@@ -1,0 +1,89 @@
+{
+  "product": "Shepherd",
+  "audience": "human owner of an agent wallet",
+  "scope": "features a real user would need beyond the hackathon demo console",
+  "features": [
+    {
+      "id": "policy-editor",
+      "feature": "Policy editor",
+      "status": "done",
+      "place": "/console/policy",
+      "notes": "Add/update/remove rules via setRule; local catalog refreshed from chain"
+    },
+    {
+      "id": "custom-intent-builder",
+      "feature": "Custom intent builder",
+      "status": "done",
+      "place": "/console/intents",
+      "notes": "Preview mirror + submit; queues high-risk to Approvals"
+    },
+    {
+      "id": "agents-console",
+      "feature": "Agents console (child sessions)",
+      "status": "done",
+      "place": "/console/agents",
+      "notes": "Spawn/revoke/reveal with same delegate limits as MCP"
+    },
+    {
+      "id": "approval-queue",
+      "feature": "High-risk approval queue",
+      "status": "done",
+      "place": "/console/approvals + header badge",
+      "notes": "Approve co-signs; Reject is local only"
+    },
+    {
+      "id": "session-limits-panel",
+      "feature": "Visible session limits",
+      "status": "done",
+      "place": "/console/session + Wallet Signers",
+      "notes": "Cap/TTL at grant; spent is local (cap is per-call on-chain)"
+    },
+    {
+      "id": "explorer-receipts",
+      "feature": "Explorer links in ops log",
+      "status": "done",
+      "place": "console ops log Link column",
+      "notes": "Also mirrored into Activity"
+    },
+    {
+      "id": "agent-connection-status",
+      "feature": "Agent connection status",
+      "status": "done",
+      "place": "/console/session",
+      "notes": "Connected after reveal or first intent"
+    },
+    {
+      "id": "activity-history",
+      "feature": "Activity history",
+      "status": "done",
+      "place": "/console/activity",
+      "notes": "sessionStorage per account"
+    },
+    {
+      "id": "owner-key-persistence",
+      "feature": "Owner / frame-signer recovery",
+      "status": "done",
+      "place": "Wallet modal → Backup",
+      "notes": "Export/import private key for this tab"
+    },
+    {
+      "id": "notifications",
+      "feature": "Co-sign / deny notifications",
+      "status": "done",
+      "place": "console toast + Approvals badge",
+      "notes": "In-app only (no browser Notification API)"
+    }
+  ],
+  "suggested_nav_order": [
+    "/console",
+    "/console/session",
+    "/console/policy",
+    "/console/agents",
+    "/console/intents",
+    "/console/approvals",
+    "/console/reads",
+    "/console/mempool",
+    "/console/activity",
+    "Wallet (modal)"
+  ]
+}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { isAddress, type Address } from "viem";
+import { formatEther, isAddress, type Address } from "viem";
 import { CHAIN_ID, CHAIN_NAME, ETHREX_URL, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
 
-type View = "home" | "send" | "receive" | "signers" | "connect";
+type View = "home" | "send" | "receive" | "signers" | "connect" | "backup";
 
 export function WalletModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const store = useStore();
@@ -14,6 +14,8 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
   const [amount, setAmount] = useState("");
   const [deposit, setDeposit] = useState("0.01");
   const [copied, setCopied] = useState("");
+  const [importKey, setImportKey] = useState("");
+  const [exportShown, setExportShown] = useState(false);
   const projectId = walletProjectId();
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   const account = store.deployed?.account;
+
   const title =
     view === "send"
       ? "Send"
@@ -52,9 +55,11 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
         ? "Receive"
         : view === "signers"
           ? "Signers"
-          : view === "connect"
-            ? "Connect wallet"
-            : "Wallet";
+          : view === "backup"
+            ? "Frame signer backup"
+            : view === "connect"
+              ? "Connect wallet"
+              : "Wallet";
 
   return (
     <Modal title={title} onClose={onClose} wide>
@@ -74,6 +79,10 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
           </p>
           <div className="modal-section">
             <h3>Browser wallets</h3>
+            <p className="lede">
+              Choosing a wallet opens its account picker. Shepherd&apos;s frame signer (owner key in this tab) is separate —
+              MetaMask is for deposits and identity, not frame digests.
+            </p>
             <div className="wallet-list">
               {store.wallets.length === 0 && (
                 <p>No EIP-6963 wallet announced yet. Open MetaMask or another extension, then try again.</p>
@@ -87,7 +96,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                   onClick={() => void pick(wallet.uuid, wallet.name)}
                 >
                   {wallet.name}
-                  <span>Connect</span>
+                  <span>Connect / switch account</span>
                 </button>
               ))}
             </div>
@@ -156,6 +165,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
             <button className="btn-ghost" type="button" onClick={() => setView("signers")}>
               Signers
             </button>
+            <button className="btn-ghost" type="button" onClick={() => setView("backup")}>
+              Backup
+            </button>
           </div>
 
           <div className="wallet-stats">
@@ -183,7 +195,16 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
               Refresh
             </button>
             {store.wallet ? (
-              <button className="btn-ghost" type="button" onClick={() => store.disconnect()}>
+              <button
+                className="btn-ghost"
+                type="button"
+                onClick={() => {
+                  store.disconnect();
+                  setExportShown(false);
+                  setImportKey("");
+                  setView("connect");
+                }}
+              >
                 Disconnect browser
               </button>
             ) : (
@@ -348,12 +369,13 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
             <li>
               <div>
                 <strong>Session</strong>
-                <span>Agent path · capped and revocable</span>
+                <span>
+                  Agent path · {store.live?.active ? "active" : "inactive"}
+                  {store.live?.valueCapWei ? ` · cap ${formatEther(BigInt(store.live.valueCapWei))} ETH` : ""}
+                  {store.sessionConnected ? " · connected" : ""}
+                </span>
               </div>
-              <code>
-                {store.sessionAddress ? shortAddress(store.sessionAddress) : "—"}
-                {store.live?.active ? " · active" : ""}
-              </code>
+              <code>{store.sessionAddress ? shortAddress(store.sessionAddress) : "—"}</code>
             </li>
             <li>
               <div>
@@ -379,11 +401,80 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                 {copied === "session" ? "Copied session" : "Copy session address"}
               </button>
             )}
+            <button className="btn-ghost" type="button" onClick={() => setView("backup")}>
+              Export / import owner
+            </button>
             {account && (
               <a className="btn-ghost" href={`${EXPLORER_URL}?address=${account}`} target="_blank" rel="noreferrer">
                 Account on explorer
               </a>
             )}
+          </div>
+        </>
+      )}
+
+      {view === "backup" && (
+        <>
+          <p className="warn">
+            The browser wallet cannot sign EIP-8141 digests. The frame signer lives in this tab&apos;s sessionStorage. Export it
+            before clearing site data. Never paste a mainnet key here.
+          </p>
+          <div className="modal-section">
+            <h3>Export</h3>
+            <div className="row">
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  const key = store.exportOwnerKey();
+                  if (!key) {
+                    store.ensureOwner();
+                    return;
+                  }
+                  setExportShown(true);
+                  void copy("export", key);
+                }}
+              >
+                {copied === "export" ? "Copied private key" : "Copy frame signer key"}
+              </button>
+              {exportShown && (
+                <button className="btn-ghost" type="button" onClick={() => setExportShown(false)}>
+                  Hide
+                </button>
+              )}
+            </div>
+            {exportShown && store.exportOwnerKey() && (
+              <input readOnly value={store.exportOwnerKey() ?? ""} aria-label="Owner private key" />
+            )}
+          </div>
+          <div className="modal-section">
+            <h3>Import</h3>
+            <label className="field">
+              <span>Private key (0x…)</span>
+              <input
+                value={importKey}
+                onChange={(event) => setImportKey(event.target.value.trim())}
+                placeholder="0x…"
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </label>
+            <button
+              className="btn"
+              type="button"
+              disabled={!importKey}
+              onClick={() => {
+                try {
+                  store.importOwnerKey(importKey);
+                  setImportKey("");
+                  setView("signers");
+                } catch (reason) {
+                  window.alert(reason instanceof Error ? reason.message : "Import failed");
+                }
+              }}
+            >
+              Import into this tab
+            </button>
           </div>
         </>
       )}

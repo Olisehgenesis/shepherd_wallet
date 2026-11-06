@@ -1,6 +1,10 @@
 # Shepherd
 
-A Safe-for-agents wallet for the alt mempool. A human keeps the owner key. The agent gets a separate session key. The account’s EIP-8141 `VERIFY` frame allowlists the target and the selector, caps value, and demands a second signature for high-risk calls. The allowlist lives in another contract, so the canonical mempool rejects the validation read and a staked alt-mempool entity is admitted.
+**Agents need privacy.** Humans already get private wallets, private browsers, and private RPC paths. Agents do not. An agent that can spend, spawn children, and call contracts still broadcasts every read and every intent in the clear — unless the stack is built for it.
+
+Shepherd is that stack: a Safe-for-agents wallet on the alt mempool. A human keeps the owner key. The agent gets a separate, scoped session key. Privacy is not a human-only privilege. The agent’s chain reads go through Anon-RPC by default, and its spends only clear when EIP-8141 `VERIFY` says the target, selector, and value are in policy.
+
+The account’s `VERIFY` frame allowlists the target and the selector, caps value, and demands a second signature for high-risk calls. The allowlist lives in another contract, so the canonical mempool rejects the validation read and a staked alt-mempool entity is admitted.
 
 Prize fit: **Best use of the Frame Transaction Alternative Mempool** (one Ethereum Foundation prize). Anon-RPC is wired for real and documented under CROPS. It is not a second prize submission.
 
@@ -8,7 +12,7 @@ Prize fit: **Best use of the Frame Transaction Alternative Mempool** (one Ethere
 
 - **Censorship resistance.** The agent path `staticcall`s `ShepherdPolicy` during `VERIFY`. Canonical rules return `StorageReadNonSender`. The unstaked alt mempool rejects the same read. After `addStake` on the devnet registry, the alt mempool admits it. That is the product, not a private relay.
 - **Open source.** MIT. No tracker, no analytics script, no font CDN. Build and demo steps are in this file.
-- **Privacy.** Browser chain reads go through `@anon-rpc/browser-harness` by default. The worker cannot touch keys, cookies, or the DOM. It **can** see every request body, and the reference specifier (`0x4fd77be300f31c5fe6ab266d35d27750a3478d27`) fulfils calls with ordinary `fetch`, so it does not unlink your IP. The one mainnet bootstrap read is not anonymized. Submissions stay on the clear gateway because the mempool has to see them. The ops log stores method, route, and verdict. It does not store addresses, payloads, or keys. There is no Node harness; the CLI’s reads are clear and labeled as such.
+- **Privacy.** Humans may already be private. Agents should be too. Browser chain reads — including the agent console — go through `@anon-rpc/browser-harness` by default so agent activity is not a cleartext side channel. The worker cannot touch keys, cookies, or the DOM. It **can** see every request body, and the reference specifier (`0x4fd77be300f31c5fe6ab266d35d27750a3478d27`) fulfils calls with ordinary `fetch`, so it does not unlink your IP. The one mainnet bootstrap read is not anonymized. Submissions stay on the clear gateway because the mempool has to see them. The ops log stores method, route, and verdict. It does not store addresses, payloads, or keys. There is no Node harness; the CLI’s reads are clear and labeled as such.
 - **Security.** The agent never holds the owner key. `VERIFY` reverts before `APPROVE` on a bad target, a value above the session cap, a revoked session, or a high-risk call without a second protocol signature (owner secp256k1 or a registered P256 key). `TIMESTAMP` is not used in validation (`OP-011`). The expiry frame’s data is hidden from other `VERIFY` frames, so a wall-clock check inside the account is impossible. **Revoke** is the kill switch. An attached expiry frame is enforced only when that contract has code, and only by its target, not by a timestamp the account can see.
 
 ## What this does not claim

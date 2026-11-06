@@ -7,6 +7,7 @@ import {
   ensureFunds,
   expiryIfLive,
   grantSession,
+  hasCode,
   highRiskCall,
   inPolicyCall,
   injectedCall,
@@ -64,11 +65,20 @@ async function demo() {
   const funded = await ensureFunds(owner);
   console.log(`fund-from-shared\t${funded}`);
   let deployed: { policy: `0x${string}`; vault: `0x${string}`; account: `0x${string}` };
-  if (state.account && state.policy && state.vault) {
+  const canReuse =
+    Boolean(state.account && state.policy && state.vault) &&
+    (await hasCode(state.account!)) &&
+    (await hasCode(state.policy!)) &&
+    (await hasCode(state.vault!));
+  if (canReuse) {
     console.log("reusing deployed account from .shepherd-state.json");
-    deployed = { account: state.account, policy: state.policy, vault: state.vault };
+    deployed = { account: state.account!, policy: state.policy!, vault: state.vault! };
   } else {
-    console.log("deploying policy, vault, account");
+    if (state.account || state.policy || state.vault) {
+      console.log("stored contracts have no code (devnet reset) — redeploying");
+    } else {
+      console.log("deploying policy, vault, account");
+    }
     deployed = await setup(state.ownerKey);
     state.policy = deployed.policy;
     state.vault = deployed.vault;

@@ -16,7 +16,7 @@ import {
   setRule,
   waitReceipt,
 } from "./chain.js";
-import { CHAIN_ID, EXPIRY_VERIFIER, SESSION_VALUE_CAP, STAKE_WEI } from "./config.js";
+import { CHAIN_ID, ETHREX_URL, EXPIRY_VERIFIER, SESSION_VALUE_CAP, STAKE_WEI, STAKING_REGISTRY } from "./config.js";
 import {
   buildAgentTx,
   buildOwnerTx,
@@ -45,7 +45,8 @@ export interface Outcome {
 
 async function submit(kind: "alt" | "canonical", wire: unknown, raw: Hex): Promise<Hex> {
   if (kind === "alt") return (await rpc("eth_sendFrameTransaction", [wire])) as Hex;
-  return (await rpc("eth_sendRawTransaction", [raw])) as Hex;
+  // Owner frames and the "canonical rejects" demo go to ethrex directly.
+  return (await rpc("eth_sendRawTransaction", [raw], ETHREX_URL)) as Hex;
 }
 
 async function mined(hash: Hex, route: Outcome["route"]): Promise<Outcome> {
@@ -57,7 +58,12 @@ async function mined(hash: Hex, route: Outcome["route"]): Promise<Outcome> {
 }
 
 function rejected(error: unknown, route: Outcome["route"]): Outcome {
-  if (error instanceof ChainError) return { verdict: "rejected", reason: error.verdict, route };
+  if (error instanceof ChainError) {
+    const reason = error.verdict === "rejected" && error.message && error.message !== "rejected"
+      ? error.message.slice(0, 120)
+      : error.verdict;
+    return { verdict: "rejected", reason, route };
+  }
   return { verdict: "rejected", reason: "rejected", route };
 }
 
@@ -85,11 +91,13 @@ async function ownerFrame(account: Address, ownerKey: Hex, call: Call): Promise<
   const owner = privateKeyToAccount(ownerKey).address;
   const tx = await signSecp(buildOwnerTx(account, owner, await nonce(account), call), ownerKey);
   const packed = packTx(tx);
+  // Owner VERIFY does not read foreign storage — submit on ethrex. The alt sidecar
+  // currently returns Internal error on some owner frames after a partial chain reset.
   try {
-    const hash = await submit("alt", packed.wire, packed.raw);
-    return mined(hash, "alt");
+    const hash = await submit("canonical", packed.wire, packed.raw);
+    return mined(hash, "canonical");
   } catch (error) {
-    return rejected(error, "alt");
+    return rejected(error, "canonical");
   }
 }
 
@@ -130,7 +138,15 @@ export function registerP256(account: Address, ownerKey: Hex, p256Key: Hex): Pro
   return ownerFrame(account, ownerKey, p256Call(account, who));
 }
 
-export function stake(account: Address, ownerKey: Hex): Promise<Outcome> {
+export async function stake(account: Address, ownerKey: Hex): Promise<Outcome> {
+  const registryCode = await code(STAKING_REGISTRY);
+  if (!registryCode || registryCode === "0x") {
+    return {
+      verdict: "rejected",
+      reason: "staking-registry-missing — public NaiveStakingRegistry has no code; ask the stall to redeploy system contracts",
+      route: "local",
+    };
+  }
   return ownerFrame(account, ownerKey, stakeCall(STAKE_WEI));
 }
 

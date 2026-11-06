@@ -192,17 +192,32 @@ export async function setRule(ownerKey: Hex, policy: Address, target: Address, s
   return hash;
 }
 
+function requireCallData(out: Hex, label: string, address: Address): Hex {
+  if (!out || out === "0x") {
+    throw new Error(
+      `${label} returned empty data at ${address}. The contract has no code — the public devnet was likely reset. Delete .shepherd-state.json (or clear the console deploy) and run setup again.`,
+    );
+  }
+  return out;
+}
+
 export async function readRule(policy: Address, target: Address, selector: Hex): Promise<number> {
   const data = encodeFunctionData({ abi: policyAbi, functionName: "readRule", args: [target, selector] });
-  const out = (await rpc("eth_call", [{ to: policy, data }, "latest"])) as Hex;
+  const out = requireCallData((await rpc("eth_call", [{ to: policy, data }, "latest"])) as Hex, "readRule", policy);
   return Number(decodeFunctionResult({ abi: policyAbi, functionName: "readRule", data: out }));
 }
 
 export async function readSession(account: Address, key: Address): Promise<{ expiry: bigint; valueCap: bigint; active: boolean }> {
   const data = encodeFunctionData({ abi: accountAbi, functionName: "sessionOf", args: [key] });
-  const out = (await rpc("eth_call", [{ to: account, data }, "latest"])) as Hex;
+  const out = requireCallData((await rpc("eth_call", [{ to: account, data }, "latest"])) as Hex, "sessionOf", account);
   const [expiry, valueCap, active] = decodeFunctionResult({ abi: accountAbi, functionName: "sessionOf", data: out });
   return { expiry, valueCap, active };
+}
+
+/** True when the address still has contract bytecode on ethrex. */
+export async function hasCode(address: Address): Promise<boolean> {
+  const value = await code(address);
+  return Boolean(value && value !== "0x");
 }
 
 export async function readStake(account: Address): Promise<{ amount: bigint; staked: boolean }> {

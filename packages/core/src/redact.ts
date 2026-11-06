@@ -28,6 +28,7 @@ export function verdictFromMessage(message: string): string {
   }
   if (/insufficient funds/i.test(message)) return "insufficient-funds";
   if (/nonce/i.test(message)) return "nonce-mismatch";
+  if (/internal error/i.test(message)) return "sidecar-internal-error";
   return "rejected";
 }
 

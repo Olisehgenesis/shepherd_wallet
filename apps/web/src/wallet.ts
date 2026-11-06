@@ -35,6 +35,11 @@ export function rememberWallet(detail: { info: WalletChoice; provider: Eip1193 }
   providers.set(detail.info.uuid, detail.provider);
 }
 
+/** Drop the cached EIP-1193 handle so the next connect must pick a provider again. */
+export function clearLastProvider() {
+  lastProvider = null;
+}
+
 export function walletProjectId() {
   return import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim() || "";
 }
@@ -114,13 +119,32 @@ export async function switchToDevnet(provider: Eip1193): Promise<number> {
   return id;
 }
 
+/**
+ * Ask the injected wallet for an account.
+ * MetaMask (and most EIP-1193 wallets) skip the picker on a second eth_requestAccounts
+ * if the origin is already authorized — so we request permissions first to reopen the chooser.
+ */
 export async function connectInjected(uuid: string, name: string): Promise<ConnectedWallet> {
   const provider = providers.get(uuid);
-  if (!provider) throw new Error("That wallet disconnected. Refresh and choose it again.");
+  if (!provider) throw new Error("That wallet disconnected. Refresh the page and choose it again.");
   lastProvider = provider;
+
+  try {
+    await provider.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+  } catch (error) {
+    const { code, message } = providerError(error);
+    if (code === 4001 || /reject|denied|cancel/i.test(message)) {
+      throw new Error("Connection rejected in the wallet.");
+    }
+    // Older wallets may not implement wallet_requestPermissions — fall through.
+  }
+
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   const address = accounts[0];
-  if (!address) throw new Error("The wallet did not return an account.");
+  if (!address) throw new Error("The wallet did not return an account. Pick one in MetaMask and try again.");
   const chainId = await switchToDevnet(provider);
   return { name, address: address as Address, chainId, uuid };
 }
@@ -213,6 +237,22 @@ export function watchWalletChain(
   };
   provider.on("chainChanged", handler);
   return () => provider.removeListener?.("chainChanged", handler);
+}
+
+/** Keep Shepherd's browser-wallet address in sync when MetaMask switches accounts. */
+export function watchWalletAccounts(
+  wallet: ConnectedWallet | null,
+  onChange: (address: Address | null) => void,
+): () => void {
+  const provider = providerFor(wallet);
+  if (!provider?.on) return () => undefined;
+  const handler = (accounts: unknown) => {
+    const list = Array.isArray(accounts) ? (accounts as string[]) : [];
+    const next = list[0];
+    onChange(next ? (next as Address) : null);
+  };
+  provider.on("accountsChanged", handler);
+  return () => provider.removeListener?.("accountsChanged", handler);
 }
 
 export function explorerAddress(address: string) {
