@@ -26,9 +26,9 @@ assert.equal(preparedNoWallet.connectWalletHeadline, false);
 const withExtension = modelHome({ ...base, hasExtension: true, sessionActive: false, backedUp: false });
 const withoutExtension = modelHome({ ...base, hasExtension: false, sessionActive: false, backedUp: false });
 assert.deepEqual(withExtension, withoutExtension);
-assert.equal(withExtension.next, "backup");
+assert.equal(withExtension.next, "grant");
 assert.equal(withExtension.showBalance, true);
-assert.ok(withExtension.needsYou.includes("backup"));
+assert.ok(!withExtension.needsYou.includes("backup" as never));
 
 const notDeployed = modelHome({ ...base, deployed: false, hasExtension: false, sessionActive: false });
 assert.equal(notDeployed.next, "prepare");

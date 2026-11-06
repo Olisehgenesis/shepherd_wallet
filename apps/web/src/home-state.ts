@@ -14,12 +14,12 @@ export interface HomeSnapshot {
   pendingCoSigns: number;
 }
 
-export type HomeNeed = "prepare" | "backup" | "cosign";
+export type HomeNeed = "prepare" | "cosign";
 
 export interface HomeModel {
   showFirstRun: boolean;
-  /** Single unfinished setup step. Null once the account, backup, and a session exist. */
-  next: "prepare" | "backup" | "grant" | null;
+  /** Single unfinished setup step. Null once the account and a session exist. Backup is optional on testnet. */
+  next: "prepare" | "grant" | null;
   needsYou: HomeNeed[];
   showBalance: boolean;
   /** Always false. Kept so a regression that restores the connect headline fails the test. */
@@ -29,7 +29,6 @@ export interface HomeModel {
 export function modelHome(snapshot: HomeSnapshot): HomeModel {
   const needsYou: HomeNeed[] = [];
   if (snapshot.hasOwner && !snapshot.deployed) needsYou.push("prepare");
-  if (snapshot.hasOwner && !snapshot.backedUp) needsYou.push("backup");
   if (snapshot.hasOwner && snapshot.pendingCoSigns > 0) needsYou.push("cosign");
 
   if (!snapshot.hasOwner) {
@@ -42,10 +41,9 @@ export function modelHome(snapshot: HomeSnapshot): HomeModel {
     };
   }
 
-  // `hasExtension` is intentionally unused: a missing MetaMask is not "start by connecting".
+  // `hasExtension` / `backedUp` are informational on the public testnet — backup never blocks grant.
   let next: HomeModel["next"] = null;
   if (!snapshot.deployed) next = "prepare";
-  else if (!snapshot.backedUp) next = "backup";
   else if (!snapshot.sessionActive) next = "grant";
 
   return {

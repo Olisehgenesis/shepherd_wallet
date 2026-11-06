@@ -18,6 +18,7 @@ import {
   type SendKind,
 } from "./reviewCopy";
 import { paths } from "./shell/destinations";
+import { WowStage } from "./shell/WowStage";
 import { useStore } from "./store";
 import { Empty, shortAddress } from "./ui";
 
@@ -78,7 +79,9 @@ export function SessionPage() {
     <>
       <header className="page-head">
         <h1>Session</h1>
-        <p>Issue a key for the agent. The value cap is enforced per call. {TTL_NOTE}</p>
+        <p>
+          Grant the agent a scoped session key (not the owner key). Cap is per call. {TTL_NOTE}
+        </p>
       </header>
       <Card>
         <CardHeader>
@@ -152,6 +155,24 @@ export function SessionPage() {
                   Reveal session key once
                 </Button>
               )}
+              {store.live?.active && store.sessionReady && (
+                <Button
+                  variant="ghost"
+                  type="button"
+                  onClick={() => {
+                    const handoff = store.exportAgentHandoff();
+                    if (!handoff) return;
+                    void navigator.clipboard.writeText(handoff);
+                    setSecret("");
+                    store.markAgentConnected();
+                    window.alert(
+                      "Agent handoff JSON copied. Paste into .shepherd-state.json at the repo root, then run:\nnpm run agent -- propose",
+                    );
+                  }}
+                >
+                  Copy agent handoff
+                </Button>
+              )}
             </div>
           )}
           {secret && (
@@ -161,6 +182,13 @@ export function SessionPage() {
             </>
           )}
           {store.keyRevealed && !secret && <p className="lede" style={{ margin: 0 }}>{REVEAL_HIDDEN_NOTE}</p>}
+          {store.live?.active && (
+            <p className="lede" style={{ margin: 0 }}>
+              Agent path: copy handoff → write <code>.shepherd-state.json</code> →{" "}
+              <code>npm run agent -- propose</code> (mirror allow, then sign-and-submit ping). Or use Demo in this tab —
+              same session key signs there.
+            </p>
+          )}
         </CardContent>
       </Card>
       <ConfirmSheet
@@ -187,21 +215,33 @@ export function SessionPage() {
           });
         }}
       />
-      <Card>
-        <CardHeader>
-          <CardTitle>P256 CO-SIGNER</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          <p className="lede" style={{ margin: 0 }}>
-            {store.p256Address
-              ? `Registered locally as ${shortAddress(store.p256Address)}. This is a P256 key, not a WebAuthn passkey ceremony.`
-              : "No P256 co-signer yet. High-risk can also be co-signed by the frame signer."}
-          </p>
-          <Button variant="ghost" disabled={store.busy} onClick={() => void store.registerCosigner()}>
-            Register P256 co-signer
-          </Button>
-        </CardContent>
-      </Card>
+      <details className="session-advanced">
+        <summary>Optional · high-risk co-sign (P256)</summary>
+        <p className="lede" style={{ margin: "10px 0 0" }}>
+          High-risk calls (e.g. vault.sweep) need a second signature. For demos, the{" "}
+          <strong>owner frame-signer</strong> co-signs — you do not need this section. P256 is an alternate protocol
+          key (not a passkey / WebAuthn ceremony).
+        </p>
+        {store.p256Address ? (
+          <>
+            <p className="lede" style={{ margin: 0 }}>
+              On-chain / local P256 id {shortAddress(store.p256Address)}. Already set for this tab.
+            </p>
+            <Button variant="ghost" disabled={store.busy} onClick={() => void store.registerCosigner()}>
+              Re-submit P256 registration
+            </Button>
+          </>
+        ) : (
+          <>
+            <p className="lede" style={{ margin: 0 }}>
+              Skip unless you want a separate P256 co-signer instead of owner secp256k1.
+            </p>
+            <Button variant="ghost" disabled={store.busy} onClick={() => void store.registerCosigner()}>
+              Add optional P256 co-signer
+            </Button>
+          </>
+        )}
+      </details>
     </>
   );
 }
@@ -223,7 +263,12 @@ export function IntentsPage() {
 
   function openSend(kind: SendKind) {
     const copy = intentReview(kind);
-    setReview({ ...copy, run: () => store.runIntent(kind) });
+    setReview({
+      ...copy,
+      run: async () => {
+        await store.runIntent(kind);
+      },
+    });
   }
 
   async function openCustom(queueIfNeedsCosign: boolean) {
@@ -620,98 +665,6 @@ export function ReadsPage() {
 }
 
 export function MempoolPage() {
-  const store = useStore();
-  const [review, setReview] = useState<(ReviewCopy & { run: () => Promise<void> }) | null>(null);
-  if (!store.deployed) {
-    return (
-      <Empty
-        title="No account to stake"
-        body="Prepare the account on Home. Stake is an owner-path frame, and the ping is an agent-path frame."
-        action={
-          <Button asChild>
-            <Link to={paths.home}>Go to Home</Link>
-          </Button>
-        }
-      />
-    );
-  }
-  return (
-    <>
-      <header className="page-head">
-        <h1>Canonical vs alt-mempool</h1>
-        <p>
-          One VERIFY policy storage read. Walk the three verdicts in order: canonical reject, unstaked alt reject, then
-          admitted after stake.
-        </p>
-      </header>
-      <Card>
-        <CardContent className="grid gap-3">
-          <ol className="mempool-verdicts" aria-label="Judge path">
-            <li>
-              <strong>1. Canonical</strong>
-              <code>canonical-storage-read</code>
-              <span>Same agent-path ping on the canonical mempool.</span>
-            </li>
-            <li>
-              <strong>2. Alt, unstaked</strong>
-              <code>unstaked-storage-read</code>
-              <span>Alt still rejects the external ShepherdPolicy slot.</span>
-            </li>
-            <li>
-              <strong>3. Alt, staked</strong>
-              <code>admitted</code>
-              <span>After addStake, the same frame can clear with an explorer link.</span>
-            </li>
-          </ol>
-          <div className="row">
-            <Button disabled={store.busy} onClick={() => void store.stakeAccount()}>
-              Stake account
-            </Button>
-            {store.live?.active && (
-              <>
-                <Button
-                  variant="ghost"
-                  disabled={store.busy}
-                  onClick={() => {
-                    const copy = intentReview("canonical");
-                    setReview({ ...copy, run: () => store.runIntent("canonical") });
-                  }}
-                >
-                  1 · Review canonical
-                </Button>
-                <Button
-                  variant="ghost"
-                  disabled={store.busy}
-                  onClick={() => {
-                    const copy = intentReview("alt");
-                    setReview({ ...copy, run: () => store.runIntent("alt") });
-                  }}
-                >
-                  2–3 · Review alt
-                </Button>
-              </>
-            )}
-          </div>
-          {!store.live?.active && (
-            <p className="lede" style={{ margin: 0 }}>
-              Stake can run now (owner path). The ping waits for an active session.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-      <ReviewSheet
-        copy={review}
-        busy={store.busy}
-        error={store.error}
-        onBack={() => {
-          if (!store.busy) setReview(null);
-        }}
-        onConfirm={() => {
-          if (!review) return;
-          void review.run().then(() => setReview(null));
-        }}
-      />
-    </>
-  );
+  return <WowStage />;
 }
 

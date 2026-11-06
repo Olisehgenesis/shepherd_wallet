@@ -223,6 +223,7 @@ interface Store {
   connect: (uuid: string, name: string) => Promise<boolean>;
   connectWc: () => Promise<boolean>;
   disconnect: () => void;
+  logout: () => void;
   switchWalletToDevnet: () => Promise<boolean>;
   ensureOwner: () => string;
   prepare: () => Promise<void>;
@@ -230,10 +231,10 @@ interface Store {
   revokeSession: () => Promise<boolean>;
   registerCosigner: () => Promise<void>;
   revealSession: () => string | null;
-  runIntent: (kind: IntentKind) => Promise<void>;
+  runIntent: (kind: IntentKind) => Promise<Outcome | null>;
   previewCustomCall: (input: CustomCallInput) => Promise<{ selector: Hex; data: Hex; value: bigint; verdict: MirrorVerdict }>;
   submitCustomCall: (input: CustomCallInput) => Promise<void>;
-  stakeAccount: () => Promise<void>;
+  stakeAccount: () => Promise<Outcome | null>;
   readAnon: () => Promise<void>;
   refresh: () => Promise<void>;
   refreshWallet: () => Promise<void>;
@@ -254,6 +255,7 @@ interface Store {
   rejectPending: (id: string) => void;
   clearToast: () => void;
   exportOwnerKey: () => string | null;
+  exportAgentHandoff: () => string | null;
   importOwnerKey: (hex: string) => void;
   markOwnerBackedUp: () => void;
   markAgentConnected: () => void;
@@ -609,11 +611,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!already) notify("Owner key backed up. You can grant an agent.");
   }
 
+  /** Backup is optional on the public alt-mempool testnet — never blocks grant/spawn. */
   function requireBackup(): boolean {
-    if (ownerBackedUp) return true;
-    setError("Back up the owner key before the first grant. Closing this tab deletes it.");
-    notify("Back up the owner key before the first grant.");
-    return false;
+    return true;
   }
 
   async function connect(uuid: string, name: string) {
@@ -643,6 +643,41 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     clearLastProvider();
     setWallet(null);
     setWalletChainId(null);
+  }
+
+  /** Wipe this tab’s Shepherd session: owner key, wallet, deploy, agent keys. Returns to FirstRun. */
+  function logout() {
+    sessionStorage.removeItem(OWNER);
+    sessionStorage.removeItem(SESSION);
+    sessionStorage.removeItem(P256);
+    sessionStorage.removeItem(DEPLOY);
+    sessionStorage.removeItem(WALLET);
+    clearLastProvider();
+    clearOwnerBackedUp();
+    clearKeyRevealed();
+    markSessionConnected(false);
+    setOwnerKey(null);
+    setSessionKey(null);
+    setP256Key(null);
+    setDeployed(null);
+    setWallet(null);
+    setWalletChainId(null);
+    setLive(null);
+    setPortfolio(null);
+    setLastTxUrl(null);
+    setPolicyRules([]);
+    setAgents([]);
+    setApprovals([]);
+    setActivity([]);
+    setLogs([]);
+    setSessionConnected(false);
+    setOwnerBackedUp(false);
+    setSessionPhase("idle");
+    setRevealedSession(null);
+    setRevealedAgents([]);
+    setError("");
+    setToast("");
+    setStatus("Logged out. Owner key cleared from this tab.");
   }
 
   async function switchWalletToDevnet() {
@@ -813,9 +848,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSessionConnected(true);
   }
 
-  async function runIntent(kind: IntentKind) {
-    if (!deployed || !sessionKey) return;
-    await work("Submitting", async () => {
+  async function runIntent(kind: IntentKind): Promise<Outcome | null> {
+    if (!deployed || !sessionKey) return null;
+    let settled: Outcome | null = null;
+    const ok = await work("Submitting", async () => {
       const call =
         kind === "drain" ? injectedCall() : kind.startsWith("sweep") ? highRiskCall(deployed.vault) : inPolicyCall(deployed.vault);
       const expiry = await expiryIfLive(BigInt(Math.floor(Date.now() / 1000)));
@@ -826,6 +862,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         { account: deployed.account, policy: deployed.policy, sessionKey, call, expiry, cosign },
         { route, sign },
       );
+      settled = outcome;
       push(kind, "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
       if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
       recordActivity(kind, "root", outcome, call.value?.toString());
@@ -846,6 +883,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setLive((current) => (current ? { ...current, spentWei: spent.toString() } : current));
       }
     });
+    return ok ? settled : null;
   }
 
   async function previewCustomCall(input: CustomCallInput) {
@@ -910,16 +948,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  async function stakeAccount() {
-    if (!deployed || !ownerKey) return;
-    await work("Staking the account", async () => {
+  async function stakeAccount(): Promise<Outcome | null> {
+    if (!deployed || !ownerKey) return null;
+    let settled: Outcome | null = null;
+    const ok = await work("Staking the account", async () => {
       const outcome = await stake(deployed.account, ownerKey);
+      settled = outcome;
       push("addStake", "clear", `${outcome.verdict}:${outcome.reason}`, outcome.explorerUrl);
       if (outcome.verdict !== "admitted") throw new Error(`Stake ${outcome.verdict}: ${outcome.reason}`);
       if (outcome.explorerUrl) setLastTxUrl(outcome.explorerUrl);
       recordActivity("addStake", "owner", outcome);
       await refresh();
     });
+    return ok ? settled : null;
   }
 
   async function readAnon() {
@@ -1197,6 +1238,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return ownerKey;
   }
 
+  /** JSON for `.shepherd-state.json` so `npm run agent -- propose` can sign with this session. */
+  function exportAgentHandoff() {
+    if (!deployed || !sessionKey || !ownerKey) return null;
+    return JSON.stringify(
+      {
+        ownerKey,
+        sessionKey,
+        policy: deployed.policy,
+        vault: deployed.vault,
+        account: deployed.account,
+      },
+      null,
+      2,
+    );
+  }
+
   function importOwnerKey(hex: string) {
     const trimmed = hex.trim() as Hex;
     if (!trimmed.startsWith("0x") || trimmed.length !== 66) throw new Error("Owner key must be a 32-byte hex private key.");
@@ -1245,6 +1302,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     connect,
     connectWc,
     disconnect,
+    logout,
     switchWalletToDevnet,
     ensureOwner,
     prepare,
@@ -1276,6 +1334,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     rejectPending,
     clearToast: () => setToast(""),
     exportOwnerKey,
+    exportAgentHandoff,
     importOwnerKey,
     markOwnerBackedUp,
     markAgentConnected,

@@ -294,9 +294,15 @@ export function WalletPage() {
             </div>
 
             {!store.deployed && (
-              <button className="btn wallet-prepare" type="button" disabled={store.busy} onClick={() => void store.prepare()}>
-                Prepare account
-              </button>
+              <aside className="dash-banner" role="status">
+                <div>
+                  <strong>Prepare your account</strong>
+                  <p>Fund the frame signer and deploy policy, vault, and account on chain {CHAIN_ID}.</p>
+                </div>
+                <button className="dash-btn primary" type="button" disabled={store.busy} onClick={() => void store.prepare()}>
+                  Fund account →
+                </button>
+              </aside>
             )}
 
             <div className="wallet-footer-links">
@@ -323,6 +329,17 @@ export function WalletPage() {
                   Connect browser
                 </button>
               )}
+              <button
+                className="wallet-text-btn wallet-logout"
+                type="button"
+                onClick={() => {
+                  store.logout();
+                  setExportShown(false);
+                  setImportKey("");
+                }}
+              >
+                Log out
+              </button>
             </div>
 
             {store.lastTxUrl && (

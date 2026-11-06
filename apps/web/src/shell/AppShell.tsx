@@ -1,16 +1,18 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ComponentType } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { MdAccountTree, MdExtension, MdMenu, MdWallet } from "react-icons/md";
+import {
+  MdDescription,
+  MdExtension,
+  MdGroups,
+  MdHome,
+  MdMenu,
+  MdScience,
+  MdSettings,
+  MdWallet,
+} from "react-icons/md";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { CHAIN_ID, CHAIN_NAME } from "../../../../packages/core/src/config.js";
 import { registerApprovalsOpener } from "../extensions";
 import { FirstRun } from "../onboarding";
@@ -19,8 +21,38 @@ import { Loader, Mark, shortAddress } from "../ui";
 import type { WalletModalView } from "../WalletModal";
 import { WalletUiProvider } from "../wallet-ui";
 import { ApprovalsQueue } from "./ApprovalsQueue";
-import { agentsMenu, paths } from "./destinations";
+import { paths } from "./destinations";
 import { ShellProvider } from "./ShellContext";
+
+const sideNav: readonly {
+  to: string;
+  label: string;
+  end?: boolean;
+  Icon: ComponentType<{ className?: string; size?: number }>;
+  match?: (pathname: string) => boolean;
+}[] = [
+  { to: paths.home, label: "Home", end: true, Icon: MdHome },
+  {
+    to: paths.agents,
+    label: "Agents",
+    Icon: MdGroups,
+    match: (pathname) => pathname.startsWith("/console/agents"),
+  },
+  {
+    to: paths.wallet,
+    label: "Wallet",
+    Icon: MdWallet,
+    match: (pathname) => pathname === paths.wallet || pathname.startsWith("/console/you"),
+  },
+  {
+    to: paths.mempool,
+    label: "Demo",
+    Icon: MdScience,
+    match: (pathname) => pathname.startsWith("/console/you/demo"),
+  },
+  { to: paths.mcp, label: "MCP", end: true, Icon: MdExtension },
+  { to: paths.you, label: "Settings", end: true, Icon: MdSettings },
+];
 
 export function AppShell() {
   const store = useStore();
@@ -52,210 +84,170 @@ export function AppShell() {
 
   if (!store.ownerAddress) return <FirstRun />;
 
-  const agentsActive = location.pathname.startsWith("/console/agents");
-  const walletActive = location.pathname === paths.wallet || location.pathname.startsWith("/console/you");
   const closeMenu = () => setMenuOpen(false);
-  const walletLabel = store.deployed
-    ? shortAddress(store.deployed.account)
-    : store.wallet
-      ? shortAddress(store.wallet.address)
-      : store.ownerAddress
-        ? shortAddress(store.ownerAddress)
-        : "Wallet";
+  const displayAddress = store.deployed?.account ?? store.wallet?.address ?? store.ownerAddress;
+  const connected = Boolean(store.ownerAddress);
+
+  function logout() {
+    store.logout();
+    navigate(paths.wallet);
+  }
+
+  function SideNav({ onNavigate }: { onNavigate?: () => void }) {
+    return (
+      <nav className="dash-side-nav" aria-label="Console">
+        {sideNav.map(({ to, label, end, Icon, match }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            className={({ isActive }) => {
+              const active = match ? match(location.pathname) : isActive;
+              return `dash-side-link${active ? " is-active" : ""}`;
+            }}
+            onClick={onNavigate}
+          >
+            <Icon className="dash-side-icon" size={18} aria-hidden />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+        <Link className="dash-side-link" to="/docs" onClick={onNavigate}>
+          <MdDescription className="dash-side-icon" size={18} aria-hidden />
+          <span>Docs</span>
+          <span className="dash-side-ext" aria-hidden="true">
+            ↗
+          </span>
+        </Link>
+      </nav>
+    );
+  }
 
   return (
     <ShellProvider value={{ openWallet, openApprovals }}>
       <WalletUiProvider value={{ openWallet }}>
-        <div className="shell">
-          <header className="nav-bar console-top">
-            <div className="wrap nav">
-              <Link className="brand" to={paths.home}>
-                <Mark />
-                Shepherd
-              </Link>
+        <div className="dash">
+          <aside className="dash-side" aria-label="Shepherd">
+            <Link className="dash-brand" to={paths.home}>
+              <Mark size={32} />
+              <span>Shepherd</span>
+            </Link>
 
-              <nav className="nav-pill console-nav-pill" aria-label="Primary">
-                <NavDropdown label="Agents" active={agentsActive} items={agentsMenu} menuLabel="Agents" />
+            <SideNav />
 
-                <NavLink
-                  to={paths.mcp}
-                  end
-                  className={({ isActive }) => `nav-link${isActive ? " active" : ""}`}
-                >
-                  <MdExtension className="nav-link-icon" size={16} aria-hidden />
-                  <span>MCP</span>
-                </NavLink>
+            <div className="dash-side-foot">
+              <div className="dash-help">
+                <strong>Need help?</strong>
+                <p>How a frame is decided, trust limits, and the mempool demo.</p>
+                <Link className="dash-help-btn" to="/how">
+                  Get help →
+                </Link>
+              </div>
+            </div>
+          </aside>
 
-                <NavLink to={paths.wallet} end className={() => `nav-link${walletActive ? " active" : ""}`}>
-                  <MdWallet className="nav-link-icon" size={16} aria-hidden />
-                  <span>Wallet</span>
-                </NavLink>
-              </nav>
-
-              <div className="nav-end">
-                <span className="console-nav-net" title={`${CHAIN_NAME} · ${CHAIN_ID}`}>
-                  <span className="console-nav-net-dot" aria-hidden="true" />
-                  {CHAIN_ID}
-                </span>
-                {store.pendingApprovalCount > 0 && (
-                  <button className="queue-chip" type="button" onClick={openApprovals}>
-                    {store.pendingApprovalCount} waiting
-                  </button>
-                )}
-                <Button asChild size="sm" className="nav-cta">
-                  <Link to={paths.wallet}>{walletLabel}</Link>
-                </Button>
-
+          <div className="dash-main">
+            <header className="dash-top">
+              <div className="dash-top-left">
                 <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="sm" className="nav-mobile-trigger" aria-label="Open menu">
+                    <Button variant="ghost" size="sm" className="dash-mobile-trigger" aria-label="Open menu">
                       <MdMenu className="size-4" />
                       Menu
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right">
+                  <SheetContent side="left" className="dash-sheet">
                     <SheetHeader>
                       <SheetTitle>Shepherd</SheetTitle>
                       <SheetDescription>Console</SheetDescription>
                     </SheetHeader>
                     <Separator />
-                    <nav className="nav-sheet" aria-label="Mobile console">
-                      <p className="nav-sheet-label">Agents</p>
-                      {agentsMenu.map((item) => (
-                        <Link
-                          key={item.to}
-                          to={item.to}
-                          onClick={() => {
-                            closeMenu();
-                            navigate(item.to);
-                          }}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                      <Separator className="my-2" />
-                      <Link to={paths.mcp} onClick={closeMenu}>
-                        MCP
+                    <SideNav onNavigate={closeMenu} />
+                    <div className="dash-help" style={{ marginTop: 16 }}>
+                      <strong>Need help?</strong>
+                      <p>How a frame is decided and trust limits.</p>
+                      <Link className="dash-help-btn" to="/how" onClick={closeMenu}>
+                        Get help →
                       </Link>
-                      <Link to={paths.wallet} onClick={closeMenu}>
-                        Wallet
-                      </Link>
-                      {store.pendingApprovalCount > 0 && (
-                        <button
-                          type="button"
-                          className="nav-sheet-btn"
-                          onClick={() => {
-                            closeMenu();
-                            openApprovals();
-                          }}
-                        >
-                          {store.pendingApprovalCount} waiting for co-sign
-                        </button>
-                      )}
-                      <Button asChild className="mt-3 w-full nav-cta">
-                        <Link to="/" onClick={closeMenu}>
-                          Site home
-                        </Link>
-                      </Button>
-                    </nav>
+                    </div>
                   </SheetContent>
                 </Sheet>
+                <span className="dash-net" title={`${CHAIN_NAME} · ${CHAIN_ID}`}>
+                  Chain {CHAIN_ID}
+                </span>
               </div>
-            </div>
-          </header>
 
-          <div className="main">
-            {store.toast && (
-              <div className="callout toast" role="status">
-                {store.toast}
-                <Button size="sm" variant="ghost" onClick={() => store.clearToast()}>
-                  Dismiss
-                </Button>
+              <div className="dash-top-right">
+                {store.pendingApprovalCount > 0 && (
+                  <button className="queue-chip" type="button" onClick={openApprovals}>
+                    {store.pendingApprovalCount} waiting
+                  </button>
+                )}
+                <span className={`dash-status${connected ? " is-on" : ""}`}>
+                  <span className="dash-status-dot" aria-hidden="true" />
+                  {connected ? "Connected" : "Offline"}
+                </span>
+                {displayAddress && (
+                  <Link className="dash-address" to={paths.wallet} title={displayAddress}>
+                    {shortAddress(displayAddress)}
+                  </Link>
+                )}
+                <button className="dash-logout" type="button" onClick={logout}>
+                  Log out
+                </button>
               </div>
-            )}
-            {store.wallet && !store.walletOnDevnet && (
-              <div className="callout bad" role="status">
-                Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
-                <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
-                  Switch network
-                </Button>
-              </div>
-            )}
-            {store.ethrex && !store.ethrex.ok && (
-              <div className="callout bad" role="status">
-                Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and
-                deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
-                <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
-                  explorer
-                </a>
-                .
-              </div>
-            )}
-            {store.status && <Loader label={store.status} />}
-            {store.error && (
-              <div className="callout bad" role="alert">
-                {store.error}
-              </div>
-            )}
-            <Outlet />
-            {location.pathname !== paths.home &&
-              location.pathname !== paths.mcp &&
-              location.pathname !== paths.wallet && (
-              <details className="ops-log">
-                <summary>
-                  Ops log <span>{store.logs.length}</span>
-                </summary>
-                <p className="ops-log-note">
-                  Full history is on <Link to={paths.activity}>Activity</Link>.
-                </p>
-              </details>
-            )}
+            </header>
+
+            <div className="dash-content">
+              {store.toast && (
+                <div className="callout toast" role="status">
+                  {store.toast}
+                  <Button size="sm" variant="ghost" onClick={() => store.clearToast()}>
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+              {store.wallet && !store.walletOnDevnet && (
+                <div className="callout bad" role="status">
+                  Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
+                  <Button size="sm" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
+                    Switch network
+                  </Button>
+                </div>
+              )}
+              {store.ethrex && !store.ethrex.ok && (
+                <div className="callout bad" role="status">
+                  Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and
+                  deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
+                  <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
+                    explorer
+                  </a>
+                  .
+                </div>
+              )}
+              {store.status && <Loader label={store.status} />}
+              {store.error && (
+                <div className="callout bad" role="alert">
+                  {store.error}
+                </div>
+              )}
+              <Outlet />
+              {location.pathname !== paths.home &&
+                location.pathname !== paths.mcp &&
+                location.pathname !== paths.wallet && (
+                  <details className="ops-log">
+                    <summary>
+                      Ops log <span>{store.logs.length}</span>
+                    </summary>
+                    <p className="ops-log-note">
+                      Full history is on <Link to={paths.activity}>Activity</Link>.
+                    </p>
+                  </details>
+                )}
+            </div>
           </div>
         </div>
         <ApprovalsQueue />
       </WalletUiProvider>
     </ShellProvider>
-  );
-}
-
-function MenuItemLabel({ label, description }: { label: string; description: string }) {
-  return (
-    <span className="console-nav-item">
-      <span className="console-nav-item-label">{label}</span>
-      <span className="console-nav-item-desc">{description}</span>
-    </span>
-  );
-}
-
-function NavDropdown({
-  label,
-  active,
-  items,
-  menuLabel,
-}: {
-  label: string;
-  active: boolean;
-  items: readonly { to: string; label: string; description: string }[];
-  menuLabel: string;
-}) {
-  const navigate = useNavigate();
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button type="button" className={`nav-link console-nav-trigger${active ? " active" : ""}`}>
-          <MdAccountTree className="nav-link-icon" size={16} aria-hidden />
-          <span>{label}</span>
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="console-nav-menu">
-        <DropdownMenuLabel>{menuLabel}</DropdownMenuLabel>
-        {items.map((item) => (
-          <DropdownMenuItem key={item.to} onSelect={() => navigate(item.to)}>
-            <MenuItemLabel label={item.label} description={item.description} />
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
