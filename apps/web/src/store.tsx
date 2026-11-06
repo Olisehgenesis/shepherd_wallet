@@ -6,9 +6,11 @@ import {
   agentAct,
   ALLOW,
   balance,
+  CHAIN_ID,
   deployStack,
   ensureFunds,
   expiryIfLive,
+  fundFromFaucet,
   grantSession,
   HIGH,
   highRiskCall,
@@ -29,11 +31,16 @@ import {
 } from "../../../packages/core/src/index.js";
 import { startAnon, type AnonSession } from "./anon";
 import {
+  CHAIN_NAME,
   connectInjected,
   connectWalletConnect,
   fundFromBrowser,
+  providerFor,
   readBrowserBalance,
+  readBrowserChainId,
   rememberWallet,
+  switchToDevnet,
+  watchWalletChain,
   type ConnectedWallet,
   type WalletChoice,
 } from "./wallet";
@@ -93,10 +100,12 @@ interface Store {
   error: string;
   anonState: "idle" | "starting" | "ready" | "failed";
   chainLabel: string;
+  walletOnDevnet: boolean;
   anonShare: number;
   connect: (uuid: string, name: string) => Promise<boolean>;
   connectWc: () => Promise<boolean>;
   disconnect: () => void;
+  switchWalletToDevnet: () => Promise<boolean>;
   ensureOwner: () => string;
   prepare: () => Promise<void>;
   issue: () => Promise<void>;
@@ -112,6 +121,7 @@ interface Store {
   topUpFromOwner: (amountEth: string) => Promise<boolean>;
   depositFromBrowser: (amountEth: string) => Promise<boolean>;
   faucetOwner: () => Promise<boolean>;
+  faucetBrowser: () => Promise<boolean>;
 }
 
 const Ctx = createContext<Store | null>(null);
@@ -142,7 +152,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [anon, setAnon] = useState<AnonSession | null>(null);
   const [anonState, setAnonState] = useState<Store["anonState"]>("idle");
-  const [chainLabel, setChainLabel] = useState("devnet");
+  const [chainLabel, setChainLabel] = useState(CHAIN_NAME);
+  const [walletChainId, setWalletChainId] = useState<number | null>(null);
   const [live, setLive] = useState<Live | null>(null);
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [lastTxUrl, setLastTxUrl] = useState<string | null>(null);
@@ -268,6 +279,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, deployed?.account, anonState, ownerKey, wallet?.address]);
 
+  useEffect(() => {
+    if (!wallet) {
+      setWalletChainId(null);
+      return;
+    }
+    void readBrowserChainId(wallet).then((id) => {
+      if (id != null) setWalletChainId(id);
+    });
+    return watchWalletChain(wallet, (id) => {
+      setWalletChainId(id);
+      setWallet((current) => (current ? { ...current, chainId: id } : current));
+    });
+  }, [wallet?.address, wallet?.uuid]);
+
   function ensureOwner() {
     if (ownerKey) return privateKeyToAccount(ownerKey).address;
     const key = generatePrivateKey();
@@ -277,26 +302,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   async function connect(uuid: string, name: string) {
-    return work("Waiting for the wallet", async () => {
+    return work(`Switching ${name} to ${CHAIN_NAME}`, async () => {
       const next = await connectInjected(uuid, name);
       sessionStorage.setItem(WALLET, JSON.stringify(next));
       setWallet(next);
+      setWalletChainId(next.chainId);
       ensureOwner();
+      push("wallet_switchEthereumChain", "clear", `chain:${next.chainId}`);
     });
   }
 
   async function connectWc() {
-    return work("Waiting for WalletConnect", async () => {
+    return work(`Switching WalletConnect to ${CHAIN_NAME}`, async () => {
       const next = await connectWalletConnect();
       sessionStorage.setItem(WALLET, JSON.stringify(next));
       setWallet(next);
+      setWalletChainId(next.chainId);
       ensureOwner();
+      push("wallet_switchEthereumChain", "clear", `chain:${next.chainId}`);
     });
   }
 
   function disconnect() {
     sessionStorage.removeItem(WALLET);
     setWallet(null);
+    setWalletChainId(null);
+  }
+
+  async function switchWalletToDevnet() {
+    if (!wallet) return false;
+    return work(`Switching to ${CHAIN_NAME}`, async () => {
+      const provider = providerFor(wallet);
+      if (!provider) throw new Error("Reconnect the browser wallet, then switch again.");
+      const chainId = await switchToDevnet(provider);
+      const next = { ...wallet, chainId };
+      sessionStorage.setItem(WALLET, JSON.stringify(next));
+      setWallet(next);
+      setWalletChainId(chainId);
+      push("wallet_switchEthereumChain", "clear", `chain:${chainId}`);
+      await refreshWallet();
+    });
   }
 
   async function prepare() {
@@ -450,6 +495,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function faucetBrowser() {
+    if (!wallet) return false;
+    return work("Asking the faucet for the browser wallet", async () => {
+      await fundFromFaucet(wallet.address);
+      push("faucet", "clear", "browser");
+      await refreshWallet();
+    });
+  }
+
   const value: Store = {
     wallets,
     wallet,
@@ -468,10 +522,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     error,
     anonState: location.pathname.startsWith("/console") ? anonState : "idle",
     chainLabel,
+    walletOnDevnet: walletChainId === CHAIN_ID || wallet?.chainId === CHAIN_ID,
     anonShare,
     connect,
     connectWc,
     disconnect,
+    switchWalletToDevnet,
     ensureOwner,
     prepare,
     issue,
@@ -487,6 +543,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     topUpFromOwner,
     depositFromBrowser,
     faucetOwner,
+    faucetBrowser,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { CHAIN_ID, CHAIN_NAME } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import { Empty, Loader, Mark, shortAddress } from "./ui";
 import { WalletModal } from "./WalletModal";
@@ -60,24 +61,44 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
         <div className="main">
           <header className="top">
             <div className="chips">
-              <span className="chip">{store.chainLabel}</span>
+              <span className="chip ok">{CHAIN_NAME} · {CHAIN_ID}</span>
               <span className={store.anonState === "ready" ? "chip ok" : store.anonState === "failed" ? "chip bad" : "chip wait"}>
                 {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
               </span>
               <span className="chip info">{store.anonShare}% anon reads</span>
+              {store.wallet && (
+                <span className={store.walletOnDevnet ? "chip ok" : "chip bad"}>
+                  {store.walletOnDevnet ? "Wallet on 1337" : `Wallet on ${store.wallet.chainId}`}
+                </span>
+              )}
             </div>
-            <button
-              className={store.deployed || store.wallet ? "wallet-chip connected" : "btn"}
-              type="button"
-              onClick={openWallet}
-            >
-              {store.deployed
-                ? `${store.live?.balance ?? store.portfolio?.accountEth ?? "0"} ETH · ${shortAddress(store.deployed.account)}`
-                : store.wallet
-                  ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
-                  : "Connect wallet"}
-            </button>
+            <div className="row">
+              {store.wallet && !store.walletOnDevnet && (
+                <button className="btn" type="button" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
+                  Switch to {CHAIN_ID}
+                </button>
+              )}
+              <button
+                className={store.deployed || store.wallet ? "wallet-chip connected" : "btn"}
+                type="button"
+                onClick={openWallet}
+              >
+                {store.deployed
+                  ? `${store.live?.balance ?? store.portfolio?.accountEth ?? "0"} ETH · ${shortAddress(store.deployed.account)}`
+                  : store.wallet
+                    ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
+                    : "Connect wallet"}
+              </button>
+            </div>
           </header>
+          {store.wallet && !store.walletOnDevnet && (
+            <div className="callout bad" role="status">
+              Browser wallet is not on {CHAIN_NAME}. Shepherd submits frames on chain {CHAIN_ID}.{" "}
+              <button className="btn" type="button" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
+                Switch network
+              </button>
+            </div>
+          )}
           {store.status && <Loader label={store.status} />}
           {store.error && (
             <div className="callout bad" role="alert">

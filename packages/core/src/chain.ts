@@ -35,9 +35,23 @@ export async function nonce(address: Address): Promise<bigint> {
 }
 
 export async function fundFromFaucet(to: Address): Promise<Hex> {
-  const result = (await rpc("skandha_explorer_faucet", [to])) as { txHash?: Hex } | Hex;
+  let result: { txHash?: Hex } | Hex;
+  try {
+    result = (await rpc("skandha_explorer_faucet", [to])) as { txHash?: Hex } | Hex;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "faucet failed";
+    if (/empty/i.test(message)) {
+      throw new Error(
+        "Devnet faucet is empty right now. Reuse a funded key, wait for a refill, or ask the alt-mempool stall for ETH.",
+      );
+    }
+    if (/once|hour|rate|already|cooldown/i.test(message)) {
+      throw new Error("Faucet already hit this address in the last hour. Reuse the funded key or wait.");
+    }
+    throw error;
+  }
   const hash = typeof result === "string" ? result : result.txHash;
-  if (!hash) throw new Error("faucet returned no transaction");
+  if (!hash) throw new Error("Faucet returned no transaction.");
   await waitReceipt(hash);
   return hash;
 }

@@ -85,4 +85,6 @@ WalletConnect needs `VITE_WALLETCONNECT_PROJECT_ID`. Injected wallets do not. Ch
 
 ## Devnet
 
-Gateway `https://altmempoolgateway.forshtat.com/rpc`, chain id 1337, explorer `https://explorer.altmempool.wtf/`, staking registry `0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f`. The network is throwaway and may reset. Fund contracts with creation value or `fund()`; a plain transfer hits `fallback` and reverts.
+Gateway `https://altmempoolgateway.forshtat.com/rpc`, chain id **1337**, explorer `https://explorer.altmempool.wtf/`, staking registry `0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f`. The network is throwaway and may reset. Fund contracts with creation value or `fund()`; a plain transfer hits `fallback` and reverts.
+
+**Faucet.** The gateway method is `skandha_explorer_faucet` (once per address per hour). The console wallet popup can faucet the frame signer or the connected browser address. If the faucet returns empty, reuse a funded key or ask the alt-mempool stall — the public faucet is sometimes dry. Connecting a browser wallet adds and switches MetaMask (or any EIP-6963 wallet) onto this chain.

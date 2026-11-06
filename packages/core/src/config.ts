@@ -1,7 +1,13 @@
-/** Devnet facts from the workshop config and docs.altmempool.wtf (5 Nov 2026). */
+/** Public alt-mempool workshop / hackathon devnet (docs.altmempool.wtf). */
 export const CHAIN_ID = 1337;
+export const CHAIN_ID_HEX = "0x539" as const;
+export const CHAIN_NAME = "Alt mempool devnet";
+export const NATIVE_CURRENCY = { name: "Ether", symbol: "ETH", decimals: 18 } as const;
+/** Sidecar gateway (eth_sendFrameTransaction). Ethrex alone is without /rpc. */
 export const GATEWAY_URL = "https://altmempoolgateway.forshtat.com/rpc";
 export const EXPLORER_URL = "https://explorer.altmempool.wtf/";
+/** Public faucet on the gateway. Once per address per hour; may be empty. */
+export const FAUCET_METHOD = "skandha_explorer_faucet" as const;
 export const STAKING_REGISTRY = "0xd51c04d7a0b01124e84de152f4e56d9eecb22d2f" as const;
 export const EXPIRY_VERIFIER = "0x81413f0cF12e9b6a49B1D0439E081c577D57FfFf" as const;
 export const ENTRY_POINT = "0x00000000000000000000000000000000000000aa" as const;

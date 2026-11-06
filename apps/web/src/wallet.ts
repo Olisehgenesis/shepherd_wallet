@@ -1,6 +1,13 @@
 import { encodeFunctionData, numberToHex, type Address, type Hex } from "viem";
 import { accountAbi } from "../../../packages/core/src/abi.js";
-import { CHAIN_ID, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
+import {
+  CHAIN_ID,
+  CHAIN_ID_HEX,
+  CHAIN_NAME,
+  EXPLORER_URL,
+  GATEWAY_URL,
+  NATIVE_CURRENCY,
+} from "../../../packages/core/src/config.js";
 
 export interface WalletChoice {
   uuid: string;
@@ -17,6 +24,8 @@ export interface ConnectedWallet {
 
 type Eip1193 = {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on?: (event: string, handler: (...args: unknown[]) => void) => void;
+  removeListener?: (event: string, handler: (...args: unknown[]) => void) => void;
 };
 
 const providers = new Map<string, Eip1193>();
@@ -30,10 +39,77 @@ export function walletProjectId() {
   return import.meta.env.VITE_WALLETCONNECT_PROJECT_ID?.trim() || "";
 }
 
-function providerFor(wallet: ConnectedWallet | null): Eip1193 | null {
+export function providerFor(wallet: ConnectedWallet | null): Eip1193 | null {
   if (!wallet) return lastProvider;
   if (wallet.uuid && providers.has(wallet.uuid)) return providers.get(wallet.uuid) ?? null;
   return lastProvider;
+}
+
+function providerError(error: unknown): { code?: number; message: string } {
+  const raw = error as { code?: number; message?: string; data?: { originalError?: { code?: number } } };
+  return {
+    code: raw?.code ?? raw?.data?.originalError?.code,
+    message: raw?.message ?? (error instanceof Error ? error.message : "wallet rejected"),
+  };
+}
+
+/** Add + switch the injected wallet onto the public alt-mempool devnet (chain 1337). */
+export async function switchToDevnet(provider: Eip1193): Promise<number> {
+  const trySwitch = async () => {
+    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_ID_HEX }] });
+  };
+  const tryAdd = async () => {
+    await provider.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: CHAIN_ID_HEX,
+          chainName: CHAIN_NAME,
+          nativeCurrency: { ...NATIVE_CURRENCY },
+          rpcUrls: [GATEWAY_URL],
+          blockExplorerUrls: [EXPLORER_URL],
+        },
+      ],
+    });
+  };
+
+  try {
+    await trySwitch();
+  } catch (error) {
+    const { code, message } = providerError(error);
+    if (code === 4902 || /unrecognized|unknown chain|not added|do not see/i.test(message)) {
+      try {
+        await tryAdd();
+      } catch (addError) {
+        const added = providerError(addError);
+        if (!/pending|already/i.test(added.message)) {
+          throw new Error(`Could not add ${CHAIN_NAME}. Approve the network in your wallet. (${added.message})`);
+        }
+      }
+      try {
+        await trySwitch();
+      } catch (switchAgain) {
+        const again = providerError(switchAgain);
+        throw new Error(`Approve switching to ${CHAIN_NAME} (chain ${CHAIN_ID}). (${again.message})`);
+      }
+    } else if (code === 4001 || /reject|denied|cancel/i.test(message)) {
+      throw new Error(`Switch to ${CHAIN_NAME} (chain ${CHAIN_ID}) was rejected.`);
+    } else {
+      // Some wallets throw a generic error before the chain exists — try add then switch.
+      try {
+        await tryAdd();
+        await trySwitch();
+      } catch {
+        throw new Error(`Could not switch to ${CHAIN_NAME}. ${message}`);
+      }
+    }
+  }
+
+  const id = Number(await provider.request({ method: "eth_chainId" }));
+  if (id !== CHAIN_ID) {
+    throw new Error(`Wallet is on chain ${id}. Shepherd needs ${CHAIN_ID} (${CHAIN_NAME}).`);
+  }
+  return id;
 }
 
 export async function connectInjected(uuid: string, name: string): Promise<ConnectedWallet> {
@@ -43,7 +119,7 @@ export async function connectInjected(uuid: string, name: string): Promise<Conne
   const accounts = (await provider.request({ method: "eth_requestAccounts" })) as string[];
   const address = accounts[0];
   if (!address) throw new Error("The wallet did not return an account.");
-  const chainId = await ensureDevnet(provider);
+  const chainId = await switchToDevnet(provider);
   return { name, address: address as Address, chainId, uuid };
 }
 
@@ -66,14 +142,14 @@ export async function connectWalletConnect(): Promise<ConnectedWallet> {
     },
   });
   await provider.connect();
-  lastProvider = provider;
+  const eip1193 = provider as unknown as Eip1193;
+  lastProvider = eip1193;
   const address = provider.accounts[0];
   if (!address) throw new Error("WalletConnect did not return an account.");
-  const chainId = await ensureDevnet(provider);
+  const chainId = await switchToDevnet(eip1193);
   return { name: "WalletConnect", address: address as Address, chainId };
 }
 
-/** Ask the connected browser wallet for its ETH balance on the current chain. */
 export async function readBrowserBalance(wallet: ConnectedWallet): Promise<bigint | null> {
   const provider = providerFor(wallet);
   if (!provider) return null;
@@ -88,6 +164,16 @@ export async function readBrowserBalance(wallet: ConnectedWallet): Promise<bigin
   }
 }
 
+export async function readBrowserChainId(wallet: ConnectedWallet | null): Promise<number | null> {
+  const provider = providerFor(wallet);
+  if (!provider) return null;
+  try {
+    return Number(await provider.request({ method: "eth_chainId" }));
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Deposit into ShepherdAccount from the connected browser wallet.
  * Must call fund() — a plain transfer hits fallback and reverts.
@@ -95,7 +181,7 @@ export async function readBrowserBalance(wallet: ConnectedWallet): Promise<bigin
 export async function fundFromBrowser(wallet: ConnectedWallet, account: Address, valueWei: bigint): Promise<Hex> {
   const provider = providerFor(wallet);
   if (!provider) throw new Error("Reconnect the browser wallet, then try again.");
-  await ensureDevnet(provider);
+  await switchToDevnet(provider);
   const data = encodeFunctionData({ abi: accountAbi, functionName: "fund" });
   const hash = (await provider.request({
     method: "eth_sendTransaction",
@@ -105,6 +191,7 @@ export async function fundFromBrowser(wallet: ConnectedWallet, account: Address,
         to: account,
         value: numberToHex(valueWei),
         data,
+        chainId: CHAIN_ID_HEX,
       },
     ],
   })) as Hex;
@@ -112,31 +199,22 @@ export async function fundFromBrowser(wallet: ConnectedWallet, account: Address,
   return hash;
 }
 
-async function ensureDevnet(provider: Eip1193): Promise<number> {
-  const chainHex = "0x539";
-  try {
-    await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: chainHex }] });
-  } catch (error) {
-    const code = (error as { code?: number }).code;
-    if (code === 4902) {
-      await provider.request({
-        method: "wallet_addEthereumChain",
-        params: [
-          {
-            chainId: chainHex,
-            chainName: "Alt mempool devnet",
-            nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-            rpcUrls: [GATEWAY_URL],
-            blockExplorerUrls: [EXPLORER_URL],
-          },
-        ],
-      });
-    }
-  }
-  const id = Number(await provider.request({ method: "eth_chainId" }));
-  return Number.isFinite(id) ? id : 0;
+export function watchWalletChain(
+  wallet: ConnectedWallet | null,
+  onChange: (chainId: number) => void,
+): () => void {
+  const provider = providerFor(wallet);
+  if (!provider?.on) return () => undefined;
+  const handler = (chainIdHex: unknown) => {
+    const id = typeof chainIdHex === "string" ? Number(chainIdHex) : Number(chainIdHex);
+    if (Number.isFinite(id)) onChange(id);
+  };
+  provider.on("chainChanged", handler);
+  return () => provider.removeListener?.("chainChanged", handler);
 }
 
 export function explorerAddress(address: string) {
   return `${EXPLORER_URL}?address=${address}`;
 }
+
+export { CHAIN_ID, CHAIN_NAME, GATEWAY_URL, EXPLORER_URL };

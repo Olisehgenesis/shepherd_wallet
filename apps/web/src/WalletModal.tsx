@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { isAddress, type Address } from "viem";
-import { EXPLORER_URL } from "../../../packages/core/src/config.js";
+import { CHAIN_ID, CHAIN_NAME, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
@@ -66,7 +66,12 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
 
       {view === "connect" && (
         <>
-          <p>Connect a browser wallet for identity and deposits. Frame hashes still use the owner signer in this tab.</p>
+          <p>
+            Connect a browser wallet. Shepherd will add and switch it to <strong>{CHAIN_NAME}</strong> (chain {CHAIN_ID}). Frame hashes still use the owner signer in this tab.
+          </p>
+          <p className="lede">
+            RPC {GATEWAY_URL.replace("https://", "")}
+          </p>
           <div className="modal-section">
             <h3>Browser wallets</h3>
             <div className="wallet-list">
@@ -118,7 +123,9 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
       {view === "home" && (
         <>
           <div className="wallet-hero">
-            <p className="wallet-label">{account ? "Shepherd account" : "Frame signer"}</p>
+            <p className="wallet-label">
+              {account ? "Shepherd account" : "Frame signer"} · {CHAIN_NAME}
+            </p>
             <p className="wallet-balance">{store.portfolio?.accountEth ?? store.portfolio?.ownerEth ?? "0"} ETH</p>
             <button
               className="wallet-address"
@@ -130,6 +137,14 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
               <span>{copied === "address" ? "Copied" : "Copy"}</span>
             </button>
           </div>
+          {store.wallet && !store.walletOnDevnet && (
+            <div className="callout bad" role="status">
+              Browser wallet is on chain {store.wallet.chainId}.{" "}
+              <button className="btn" type="button" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
+                Switch to {CHAIN_ID}
+              </button>
+            </div>
+          )}
 
           <div className="wallet-actions">
             <button className="btn" type="button" disabled={!account || store.busy} onClick={() => setView("send")}>
@@ -254,7 +269,28 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
           )}
 
           <div className="modal-section">
-            <h3>Top up</h3>
+            <h3>Devnet faucet</h3>
+            <p className="lede">
+              Public method <code>skandha_explorer_faucet</code> on the gateway. Once per address per hour. It is empty sometimes — if so, reuse a funded key or ask the stall.
+            </p>
+            <div className="row">
+              <button className="btn" type="button" disabled={store.busy} onClick={() => void store.faucetOwner()}>
+                Faucet frame signer
+              </button>
+              {store.wallet && (
+                <button
+                  className="btn-ghost"
+                  type="button"
+                  disabled={store.busy || !store.walletOnDevnet}
+                  onClick={() => void store.faucetBrowser()}
+                >
+                  Faucet browser wallet
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="modal-section">
+            <h3>Top up account</h3>
             <label className="field">
               <span>Amount (ETH)</span>
               <input value={deposit} onChange={(event) => setDeposit(event.target.value)} inputMode="decimal" />
@@ -264,7 +300,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                 <button
                   className="btn"
                   type="button"
-                  disabled={store.busy || !deposit}
+                  disabled={store.busy || !deposit || !store.walletOnDevnet}
                   onClick={() => void store.depositFromBrowser(deposit)}
                 >
                   Deposit from browser
@@ -280,9 +316,6 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                   Top up from frame signer
                 </button>
               )}
-              <button className="btn-ghost" type="button" disabled={store.busy} onClick={() => void store.faucetOwner()}>
-                Faucet frame signer
-              </button>
             </div>
             {store.portfolio && (
               <p className="lede">
