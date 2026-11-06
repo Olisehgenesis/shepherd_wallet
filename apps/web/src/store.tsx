@@ -350,7 +350,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem(OWNER, key);
       setOwnerKey(key);
       const owner = privateKeyToAccount(key).address;
-      setStatus("Asking the faucet");
+      setStatus("Funding frame signer from shared genesis key");
       await ensureFunds(owner);
       setStatus("Deploying the policy, the vault, and the account");
       const next = await deployStack(key);

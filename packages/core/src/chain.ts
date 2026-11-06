@@ -28,6 +28,28 @@ export async function chainId(): Promise<number> {
   return Number(await rpc("eth_chainId", [], ETHREX_URL));
 }
 
+/** Latest ethrex block number and age. Used to fail fast when the public chain is stalled. */
+export async function latestBlock(): Promise<{ number: bigint; ageSec: number }> {
+  const block = (await rpc("eth_getBlockByNumber", ["latest", false], ETHREX_URL)) as {
+    number?: string;
+    timestamp?: string;
+  } | null;
+  if (!block?.number || !block.timestamp) throw new Error("ethrex returned no latest block");
+  const number = BigInt(block.number);
+  const ageSec = Math.max(0, Math.floor(Date.now() / 1000) - Number(block.timestamp));
+  return { number, ageSec };
+}
+
+/** Throw if ethrex has not produced a block recently (funding/deploys cannot finish). */
+export async function assertChainLive(maxAgeSec = 120): Promise<void> {
+  const { number, ageSec } = await latestBlock();
+  if (ageSec > maxAgeSec) {
+    throw new Error(
+      `Public ethrex is not mining — latest block ${number.toString()} is ${ageSec}s old. Funding and Prepare cannot finish until the stall clears. Check https://explorer.altmempool.wtf/ and retry.`,
+    );
+  }
+}
+
 export async function balance(address: Address): Promise<bigint> {
   return BigInt((await rpc("eth_getBalance", [address, "latest"], ETHREX_URL)) as string);
 }

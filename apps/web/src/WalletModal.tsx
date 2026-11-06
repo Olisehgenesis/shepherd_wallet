@@ -265,7 +265,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
               </div>
             </div>
           ) : (
-            <p>Prepare the account first. Until then you can faucet the frame signer below.</p>
+            <p>Prepare the account first. Until then you can fund the frame signer below.</p>
           )}
 
           <div className="modal-section">

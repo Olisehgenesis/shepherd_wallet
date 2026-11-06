@@ -155,7 +155,7 @@ export function Landing() {
               <b>2</b>
               <div>
                 <h3>Prepare</h3>
-                <p>The faucet funds a frame signer in this tab. Shepherd deploys the policy, the vault, and the account, then allowlists ping and marks sweep as high-risk.</p>
+                <p>The shared genesis key funds a frame signer in this tab. Shepherd deploys the policy, the vault, and the account, then allowlists ping and marks sweep as high-risk.</p>
                 <Link to="/console">Open Overview</Link>
               </div>
             </li>
@@ -250,7 +250,7 @@ export function Docs() {
             Open the console and use <Link to="/console/wallet">Connect wallet</Link>. Any EIP-6963 wallet can appear. WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>.
           </li>
           <li>
-            Open <Link to="/console">Overview</Link> and choose Prepare the account. The faucet runs once, then the three contracts deploy. This can take a minute. The loader stays up until the receipt lands.
+            Open <Link to="/console">Overview</Link> and choose Prepare the account. Shepherd funds the frame signer from the shared genesis key, then the three contracts deploy. This can take a minute. The loader stays up until the receipt lands.
           </li>
           <li>
             Open <Link to="/console/session">Session</Link> and issue a session key. Reveal it only if another process on this machine needs it. It is not written to the ops log.
