@@ -129,11 +129,16 @@ export function WalletPage() {
         <div className="wallet-page-body pixel-panel">
         {view === "connect" && (
           <div className="wallet-stack">
-            <p className="wallet-lede">
-              {store.wallets.length === 0
-                ? "No browser extension detected. Create an owner key in this tab, then back it up before any grant."
-                : "Browser wallets handle identity and deposits. The owner key in this tab signs EIP-8141 frame calls."}
-            </p>
+            <div className="wallet-connect-intro">
+              <figure className="wallet-sticker" aria-hidden="true">
+                <img src="/how/asset-onboard-owner.jpg" alt="" />
+              </figure>
+              <p className="wallet-lede">
+                {store.wallets.length === 0
+                  ? "No browser extension detected. Create an owner key in this tab, then back it up before any grant. Browser wallets cannot sign EIP-8141 frames."
+                  : "Browser wallets handle identity and deposits. The owner key in this tab signs EIP-8141 frame calls."}
+              </p>
+            </div>
             {!store.ownerAddress && (
               <button
                 className="wallet-cta"
@@ -144,8 +149,11 @@ export function WalletPage() {
                   setView("backup");
                 }}
               >
-                <strong>Create owner key</strong>
-                <span>Recommended — stays in this browser until you back it up</span>
+                <img className="wallet-cta-art" src="/how/how-owner-key.jpg" alt="" aria-hidden="true" />
+                <span>
+                  <strong>Create owner key</strong>
+                  <span>Recommended — stays in this browser until you back it up</span>
+                </span>
               </button>
             )}
             <div className="wallet-provider-list">

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "./store";
+import { Mark } from "./ui";
 import { walletProjectId } from "./wallet";
 
 /**
@@ -35,28 +36,63 @@ export function FirstRun() {
   return (
     <main className="onboard">
       <div className="onboard-shell">
-        <div className="onboard-mark" aria-hidden="true">
-          S
-        </div>
-        <h1>A wallet your agents can use — only inside your rules.</h1>
-        <p className="onboard-lead">You keep the owner key. An agent gets a scoped session. Revoke stops them.</p>
-        <div className="onboard-steps" role="img" aria-label="Step 1 of 4, create the owner key">
-          <span className="on" />
-          <span />
-          <span />
-          <span />
-        </div>
-        <section className="onboard-card">
-          <h2>Start</h2>
-          <p>
-            {extensionMissing
-              ? "No browser extension detected in this environment. Create an owner key in this tab, then back it up before any grant."
-              : "Create an owner key in this tab. A browser extension can identify you and send deposits. It cannot sign frame calls. Back the key up before any grant."}
+        <header className="onboard-hero">
+          <div className="onboard-brand">
+            <Mark size={36} />
+            <span>Shepherd</span>
+          </div>
+          <figure className="onboard-sticker" aria-hidden="true">
+            <img src="/how/asset-onboard-owner.jpg" alt="" />
+          </figure>
+          <p className="onboard-eyebrow">Frame-native agent account</p>
+          <h1>A frame-transaction account for agents.</h1>
+          <p className="onboard-lead">
+            The human keeps the owner key. The agent gets a separate, scoped session key. Spend only clears when VERIFY
+            says target, selector, and value are in policy.
           </p>
+        </header>
+
+        <ol className="onboard-path" aria-label="Path to first admitted call">
+          <li className="on" aria-current="step">
+            <strong>1</strong>
+            <span>Owner key</span>
+          </li>
+          <li>
+            <strong>2</strong>
+            <span>Session</span>
+          </li>
+          <li>
+            <strong>3</strong>
+            <span>Stake</span>
+          </li>
+          <li>
+            <strong>4</strong>
+            <span>Admit</span>
+          </li>
+        </ol>
+
+        <section className="onboard-card">
+          <div className="onboard-card-head">
+            <div>
+              <h2>Start here</h2>
+              <p>
+                {extensionMissing
+                  ? "No browser extension detected. Create an owner key in this tab, then back it up before any grant."
+                  : "Create an owner key in this tab. A browser wallet can identify you and send deposits. It cannot sign frame calls."}
+              </p>
+            </div>
+            <figure className="onboard-sticker onboard-sticker-sm" aria-hidden="true">
+              <img src="/how/asset-onboard-session.jpg" alt="" />
+            </figure>
+          </div>
+
           <div className="onboard-choices">
             <button className="onboard-choice primary" type="button" disabled={store.busy} onClick={createOwner}>
-              <strong>Create owner key</strong>
-              <span>Recommended here — stays in this browser until you back it up</span>
+              <img className="onboard-choice-art" src="/how/how-owner-key.jpg" alt="" aria-hidden="true" />
+              <span className="onboard-choice-copy">
+                <strong>Create owner key</strong>
+                <span>Recommended — stays in this browser until you back it up</span>
+              </span>
             </button>
             <button
               className="onboard-choice"
@@ -66,10 +102,16 @@ export function FirstRun() {
                 setConnectOpen(true);
               }}
             >
-              <strong>Connect a browser wallet</strong>
-              <span>For identity and deposits. It cannot sign frame calls.</span>
+              <span className="onboard-choice-badge" aria-hidden="true">
+                W
+              </span>
+              <span className="onboard-choice-copy">
+                <strong>Connect a browser wallet</strong>
+                <span>Identity and deposits only. Cannot sign EIP-8141 frames.</span>
+              </span>
             </button>
           </div>
+
           {connectOpen && (store.wallets.length > 0 || projectId) && (
             <div className="onboard-wallets">
               {store.wallets.map((wallet) => (
@@ -80,20 +122,35 @@ export function FirstRun() {
                   disabled={store.busy}
                   onClick={() => void connectWallet(wallet.uuid, wallet.name)}
                 >
-                  <strong>{wallet.name}</strong>
-                  <span>Connect for identity and deposits</span>
+                  <span className="onboard-choice-copy">
+                    <strong>{wallet.name}</strong>
+                    <span>Connect for identity and deposits</span>
+                  </span>
                 </button>
               ))}
               {projectId && (
                 <button className="onboard-choice" type="button" disabled={store.busy} onClick={() => void connectWc()}>
-                  <strong>WalletConnect</strong>
-                  <span>QR code</span>
+                  <span className="onboard-choice-copy">
+                    <strong>WalletConnect</strong>
+                    <span>QR code</span>
+                  </span>
                 </button>
               )}
             </div>
           )}
-          <p className="onboard-fine">Keys live in this tab until Backup. Closing the tab without Backup deletes them.</p>
+
+          <p className="onboard-fine">
+            Keys live in this tab until Backup. Closing the tab without Backup deletes them. After setup, open{" "}
+            <Link to="/console/you/demo/mempool">Canonical vs alt-mempool</Link>.
+          </p>
         </section>
+
+        <nav className="onboard-links" aria-label="Learn more">
+          <Link to="/how">How a frame is decided</Link>
+          <Link to="/trust">Trust center</Link>
+          <Link to="/docs">Docs</Link>
+        </nav>
+
         {store.status && (
           <p className="onboard-status" role="status">
             {store.status}
