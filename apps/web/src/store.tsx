@@ -5,6 +5,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   agentAct,
   ALLOW,
+  assertChainLive,
   balance,
   CHAIN_ID,
   deployStack,
@@ -16,6 +17,7 @@ import {
   highRiskCall,
   inPolicyCall,
   injectedCall,
+  latestBlock,
   PING,
   posture,
   registerP256,
@@ -101,6 +103,7 @@ interface Store {
   anonState: "idle" | "starting" | "ready" | "failed";
   chainLabel: string;
   walletOnDevnet: boolean;
+  ethrex: { ok: boolean; block: string; ageSec: number } | null;
   anonShare: number;
   connect: (uuid: string, name: string) => Promise<boolean>;
   connectWc: () => Promise<boolean>;
@@ -154,6 +157,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [anonState, setAnonState] = useState<Store["anonState"]>("idle");
   const [chainLabel, setChainLabel] = useState(CHAIN_NAME);
   const [walletChainId, setWalletChainId] = useState<number | null>(null);
+  const [ethrex, setEthrex] = useState<Store["ethrex"]>(null);
   const [live, setLive] = useState<Live | null>(null);
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
   const [lastTxUrl, setLastTxUrl] = useState<string | null>(null);
@@ -280,6 +284,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [location.pathname, deployed?.account, anonState, ownerKey, wallet?.address]);
 
   useEffect(() => {
+    if (!location.pathname.startsWith("/console")) return;
+    let cancel = false;
+    const tick = async () => {
+      try {
+        const { number, ageSec } = await latestBlock();
+        if (!cancel) setEthrex({ ok: ageSec <= 120, block: number.toString(), ageSec });
+      } catch {
+        if (!cancel) setEthrex({ ok: false, block: "?", ageSec: -1 });
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 15_000);
+    return () => {
+      cancel = true;
+      window.clearInterval(id);
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
     if (!wallet) {
       setWalletChainId(null);
       return;
@@ -346,6 +369,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   async function prepare() {
     await work("Preparing the account", async () => {
+      setStatus("Checking ethrex is mining");
+      await assertChainLive();
       const key = ownerKey ?? generatePrivateKey();
       sessionStorage.setItem(OWNER, key);
       setOwnerKey(key);
@@ -523,6 +548,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     anonState: location.pathname.startsWith("/console") ? anonState : "idle",
     chainLabel,
     walletOnDevnet: walletChainId === CHAIN_ID || wallet?.chainId === CHAIN_ID,
+    ethrex,
     anonShare,
     connect,
     connectWc,

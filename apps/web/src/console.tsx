@@ -62,6 +62,13 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
           <header className="top">
             <div className="chips">
               <span className="chip ok">{CHAIN_NAME} · {CHAIN_ID}</span>
+              <span className={store.ethrex?.ok ? "chip ok" : store.ethrex ? "chip bad" : "chip wait"}>
+                {store.ethrex?.ok
+                  ? `ethrex live · #${store.ethrex.block}`
+                  : store.ethrex
+                    ? `ethrex stalled · ${store.ethrex.ageSec}s`
+                    : "ethrex…"}
+              </span>
               <span className={store.anonState === "ready" ? "chip ok" : store.anonState === "failed" ? "chip bad" : "chip wait"}>
                 {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
               </span>
@@ -97,6 +104,15 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               <button className="btn" type="button" disabled={store.busy} onClick={() => void store.switchWalletToDevnet()}>
                 Switch network
               </button>
+            </div>
+          )}
+          {store.ethrex && !store.ethrex.ok && (
+            <div className="callout bad" role="status">
+              Public ethrex is not mining (block #{store.ethrex.block}, age {store.ethrex.ageSec}s). Prepare, fund, and deploys cannot finish until new blocks appear. Ask @forshtat at the stall or retry later —{" "}
+              <a href="https://explorer.altmempool.wtf/" target="_blank" rel="noreferrer">
+                explorer
+              </a>
+              .
             </div>
           )}
           {store.status && <Loader label={store.status} />}
