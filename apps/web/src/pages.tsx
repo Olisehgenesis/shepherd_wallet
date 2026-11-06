@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Site } from "./site";
-import { Mark } from "./ui";
 
 const products = [
   ["/console/wallet", "Wallet", "Connect-wallet popup"],
@@ -61,55 +62,119 @@ const tabs = [
   },
 ] as const;
 
+const stats = [
+  { label: "Owner key", value: "YOURS", tone: "ok" as const },
+  { label: "Session", value: "SCOPED", tone: "info" as const },
+  { label: "VERIFY", value: "LIVE", tone: "wait" as const },
+  { label: "Canonical", value: "REJECT", tone: "bad" as const },
+];
+
 export function Landing() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("policy");
   const current = tabs.find((item) => item.id === tab) ?? tabs[0];
   return (
     <Site>
       <div className="wrap">
-        <section className="hero">
+        <section className="rpg-stage" aria-label="Shepherd home">
+          <div className="grid gap-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="pixel-heart">SELECT</CardTitle>
+              </CardHeader>
+              <CardContent className="rpg-menu font-pixel text-[10px] leading-relaxed">
+                <Link to="/console">♥ CONSOLE</Link>
+                <Link to="/how">  HOW</Link>
+                <Link to="/docs">  DOCS</Link>
+                <Link to="/mcp">  MCP</Link>
+                <Link to="/trust">  TRUST</Link>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="text-[13px] text-[var(--muted)]">
+                <span className="blink">*</span> SHEPHERD — the agent never holds the key that can empty the wallet.
+              </CardContent>
+            </Card>
+          </div>
+
           <div>
-            <p className="brand-line">
-              <Mark size={36} /> Shepherd
-            </p>
-            <h1>The agent never holds the key that can empty the wallet.</h1>
-            <p className="deck">
-              You keep the owner key. The agent gets a scoped session the VERIFY frame can refuse. Canonical rejects the policy read; a staked alt mempool can admit it.
-            </p>
-            <div className="row">
-              <Link className="btn btn-lg" to="/console">
-                Open the console
-              </Link>
-              <Link className="btn-ghost btn-lg" to="/docs">
-                Read the docs
-              </Link>
-            </div>
+            <p className="rpg-kicker">POLICY-DRIVEN. OWNER-FIRST.</p>
+            <h1 className="rpg-title">SHEPHERD</h1>
+            <p className="rpg-sub">A SCOPED SESSION THE VERIFY FRAME CAN REFUSE</p>
+            <figure className="rpg-hero">
+              <img
+                src="/hero.png"
+                alt="Shepherd illustration: the owner holds the key while a scoped agent stays limited."
+                width={720}
+                height={960}
+                decoding="async"
+              />
+              <div className="rpg-hero-copy">
+                <h1>The agent never holds the key that can empty the wallet.</h1>
+                <p className="lede" style={{ margin: "0 0 12px" }}>
+                  You keep the owner key. Canonical rejects the policy read; a staked alt mempool can admit it.
+                </p>
+                <div className="row">
+                  <Link className="btn" to="/console">
+                    START PROJECT
+                  </Link>
+                  <Link className="btn-ghost" to="/docs">
+                    READ DOCS
+                  </Link>
+                </div>
+              </div>
+            </figure>
           </div>
-          <figure className="hero-art">
-            <img src="/hero.png" alt="Shepherd illustration: the owner holds the key while a scoped agent stays limited." width={720} height={960} decoding="async" />
-          </figure>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>STATS</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {stats.map((stat) => (
+                <div className="rpg-stat" key={stat.label}>
+                  <span aria-hidden="true">◆</span>
+                  <span>{stat.label}</span>
+                  <Badge variant={stat.tone}>{stat.value}</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </section>
 
-        <section className="setup wrap-inline" aria-label="Prepare Shepherd">
-          <h2>
-            <Mark size={22} /> Prepare Shepherd
-          </h2>
-          <ul>
-            <li>Connect any injected wallet, or WalletConnect</li>
-            <li>The account deploys on the public alt-mempool devnet</li>
-            <li>The session key is not your seed</li>
-          </ul>
-          <div className="row">
-            <Link className="btn" to="/console/wallet">
-              Connect wallet
-            </Link>
-            <Link className="btn-ghost" to="/how">
-              See the path
-            </Link>
-          </div>
+        <section className="rpg-dialogue" aria-label="Dialogue">
+          <Card>
+            <CardContent className="font-pixel text-[10px] leading-relaxed">
+              <p style={{ margin: "0 0 10px" }}>
+                <span className="blink">*</span> YOU&apos;VE FOUND A CREATIVE PARTNER FOR SCOPED AGENTS.
+              </p>
+              <p style={{ margin: 0 }}>
+                <span className="blink">*</span> LET&apos;S BUILD AN ADMITTED PING ON THE ALT MEMPOOL.
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent>
+              <p className="rpg-kicker" style={{ marginBottom: 10 }}>
+                PREPARE
+              </p>
+              <ul style={{ margin: "0 0 12px", paddingLeft: 18, color: "var(--muted)" }}>
+                <li>Connect any injected wallet, or WalletConnect</li>
+                <li>The account deploys on the public alt-mempool devnet</li>
+                <li>The session key is not your seed</li>
+              </ul>
+              <div className="row">
+                <Link className="btn" to="/console/wallet">
+                  Connect wallet
+                </Link>
+                <Link className="btn-ghost" to="/how">
+                  See the path
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
-        <section className="demo" aria-label="What the console decides">
+        <section className="demo pixel-panel" aria-label="What the console decides" style={{ marginTop: 18, background: "var(--surface)" }}>
           <div className="tabs" role="tablist">
             {tabs.map((item) => (
               <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => setTab(item.id)}>
@@ -119,7 +184,7 @@ export function Landing() {
           </div>
           <div className="demo-body" role="tabpanel">
             <div>
-              <h2>{current.title}</h2>
+              <h2 className="font-pixel text-[12px] leading-relaxed">{current.title}</h2>
               <p>{current.body}</p>
             </div>
             <table>
@@ -135,8 +200,8 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="block">
-          <h2>Where each part lives</h2>
+        <section style={{ marginTop: 28 }}>
+          <h2 className="font-pixel text-[12px] leading-relaxed">Where each part lives</h2>
           <div className="cloud">
             {products.map(([to, label, hint]) => (
               <Link key={to} to={to}>
@@ -147,8 +212,8 @@ export function Landing() {
           </div>
         </section>
 
-        <section className="block">
-          <h2>From a wallet to an admitted ping</h2>
+        <section style={{ marginTop: 28 }}>
+          <h2 className="font-pixel text-[12px] leading-relaxed">From a wallet to an admitted ping</h2>
           <ol className="steps">
             <li>
               <b>1</b>
@@ -185,10 +250,17 @@ export function Landing() {
           </ol>
         </section>
 
-        <section className="close">
+        <section className="close pixel-panel" style={{ background: "var(--surface)" }}>
           <div>
-            <h2>Use it on the devnet</h2>
+            <h2 className="font-pixel text-[12px] leading-relaxed">Use it on the devnet</h2>
             <p>Four steps. The first admitted ping is the point of the console.</p>
+            <div className="partner-row" style={{ justifyContent: "flex-start", marginTop: 12 }}>
+              <span>EIP-8141</span>
+              <span>ALT MEMPOOL</span>
+              <span>ANON-RPC</span>
+              <span>MCP</span>
+              <span>DEVNET 1337</span>
+            </div>
           </div>
           <Link className="btn btn-lg" to="/console">
             Open the console

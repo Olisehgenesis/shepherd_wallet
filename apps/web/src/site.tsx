@@ -3,9 +3,9 @@ import { Link, NavLink } from "react-router-dom";
 import { Mark } from "./ui";
 
 const links = [
-  ["/how", "How"],
-  ["/docs", "Docs"],
-  ["/trust", "Trust"],
+  ["/how", "HOW"],
+  ["/docs", "DOCS"],
+  ["/trust", "TRUST"],
   ["/mcp", "MCP"],
 ] as const;
 
@@ -16,24 +16,36 @@ export function Site({ children }: { children: React.ReactNode }) {
       <a className="skip" href="#content">
         Skip to content
       </a>
-      <header className="nav">
+      <header className="nav wrap">
         <Link to="/" className="brand" onClick={() => setOpen(false)}>
           <Mark />
-          Shepherd
+          <span className="font-pixel text-[10px] tracking-wide">SHEPHERD</span>
         </Link>
         <button className="nav-toggle" type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
           {open ? "Close" : "Menu"}
         </button>
         <nav className={open ? "nav-links open" : "nav-links"} aria-label="Site">
           <details className="menu">
-            <summary>Console</summary>
+            <summary>CONSOLE</summary>
             <div>
-              <Link to="/console" onClick={() => setOpen(false)}>Overview</Link>
-              <Link to="/console/wallet" onClick={() => setOpen(false)}>Connect wallet</Link>
-              <Link to="/console/session" onClick={() => setOpen(false)}>Session</Link>
-              <Link to="/console/intents" onClick={() => setOpen(false)}>Intents</Link>
-              <Link to="/console/reads" onClick={() => setOpen(false)}>Reads</Link>
-              <Link to="/console/mempool" onClick={() => setOpen(false)}>Mempool</Link>
+              <Link to="/console" onClick={() => setOpen(false)}>
+                Overview
+              </Link>
+              <Link to="/console/wallet" onClick={() => setOpen(false)}>
+                Connect wallet
+              </Link>
+              <Link to="/console/session" onClick={() => setOpen(false)}>
+                Session
+              </Link>
+              <Link to="/console/intents" onClick={() => setOpen(false)}>
+                Intents
+              </Link>
+              <Link to="/console/reads" onClick={() => setOpen(false)}>
+                Reads
+              </Link>
+              <Link to="/console/mempool" onClick={() => setOpen(false)}>
+                Mempool
+              </Link>
             </div>
           </details>
           {links.map(([to, label]) => (
@@ -42,7 +54,7 @@ export function Site({ children }: { children: React.ReactNode }) {
             </NavLink>
           ))}
           <Link className="btn nav-cta" to="/console" onClick={() => setOpen(false)}>
-            Open the console
+            START PROJECT
           </Link>
         </nav>
       </header>
@@ -51,7 +63,7 @@ export function Site({ children }: { children: React.ReactNode }) {
         <div className="wrap foot-row">
           <Link to="/" className="brand">
             <Mark size={22} />
-            Shepherd
+            <span className="font-pixel text-[9px]">SHEPHERD</span>
           </Link>
           <nav aria-label="Footer">
             {links.map(([to, label]) => (
@@ -59,7 +71,7 @@ export function Site({ children }: { children: React.ReactNode }) {
                 {label}
               </Link>
             ))}
-            <Link to="/console">Console</Link>
+            <Link to="/console">CONSOLE</Link>
           </nav>
           <p>Devnet only. No tracker. The worker still sees Anon-RPC request bodies.</p>
         </div>

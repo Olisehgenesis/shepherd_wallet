@@ -40,7 +40,7 @@ export function Modal({
   return (
     <div className="modal-root" role="presentation">
       <button className="modal-backdrop" type="button" aria-label="Close dialog" onClick={onClose} />
-      <div className={wide ? "modal modal-wide" : "modal"} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className={wide ? "modal modal-wide pixel-panel" : "modal pixel-panel"} role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <header className="modal-head">
           <h2 id="modal-title">{title}</h2>
           <button className="btn-ghost modal-close" type="button" onClick={onClose}>
