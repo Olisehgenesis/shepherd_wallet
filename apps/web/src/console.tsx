@@ -145,7 +145,7 @@ export function Overview() {
   const next = !store.wallet
     ? { kind: "wallet" as const, label: "Connect a wallet", title: "Start by connecting a wallet", body: "Shepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set." }
     : !store.deployed
-      ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare asks the faucet for the frame signer, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
+      ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare funds the frame signer from the shared genesis key, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
       : !store.live?.active
         ? { kind: "link" as const, href: "/console/session", label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. The owner path is already able to stake." }
         : !store.live.staked

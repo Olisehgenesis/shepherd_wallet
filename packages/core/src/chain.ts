@@ -12,54 +12,92 @@ import { bytecode } from "./bytecode.js";
 import {
   ACCOUNT_FUND_WEI,
   CHAIN_ID,
+  ETHREX_URL,
+  FUND_AMOUNT_WEI,
+  FUND_TRANSFER_GAS,
+  GATEWAY_URL,
   LEGACY_GAS,
   LEGACY_GAS_PRICE,
+  SHARED_FUNDER,
+  SHARED_FUNDER_KEY,
   STAKING_REGISTRY,
 } from "./config.js";
 import { rpc, sleep } from "./rpc.js";
 
 export async function chainId(): Promise<number> {
-  return Number(await rpc("eth_chainId", []));
+  return Number(await rpc("eth_chainId", [], ETHREX_URL));
 }
 
 export async function balance(address: Address): Promise<bigint> {
-  return BigInt((await rpc("eth_getBalance", [address, "latest"])) as string);
+  return BigInt((await rpc("eth_getBalance", [address, "latest"], ETHREX_URL)) as string);
 }
 
 export async function code(address: Address): Promise<Hex> {
-  return (await rpc("eth_getCode", [address, "latest"])) as Hex;
+  return (await rpc("eth_getCode", [address, "latest"], ETHREX_URL)) as Hex;
 }
 
 export async function nonce(address: Address): Promise<bigint> {
-  return BigInt((await rpc("eth_getTransactionCount", [address, "pending"])) as string);
+  return BigInt((await rpc("eth_getTransactionCount", [address, "pending"], ETHREX_URL)) as string);
 }
 
-export async function fundFromFaucet(to: Address): Promise<Hex> {
-  let result: { txHash?: Hex } | Hex;
+async function networkGasPrice(): Promise<bigint> {
   try {
-    result = (await rpc("skandha_explorer_faucet", [to])) as { txHash?: Hex } | Hex;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "faucet failed";
-    if (/empty/i.test(message)) {
-      throw new Error(
-        "Devnet faucet is empty right now. Reuse a funded key, wait for a refill, or ask the alt-mempool stall for ETH.",
-      );
-    }
-    if (/once|hour|rate|already|cooldown/i.test(message)) {
-      throw new Error("Faucet already hit this address in the last hour. Reuse the funded key or wait.");
-    }
-    throw error;
+    const hex = (await rpc("eth_gasPrice", [], ETHREX_URL)) as string;
+    const network = BigInt(hex);
+    return network > LEGACY_GAS_PRICE ? network : LEGACY_GAS_PRICE;
+  } catch {
+    return LEGACY_GAS_PRICE;
   }
-  const hash = typeof result === "string" ? result : result.txHash;
-  if (!hash) throw new Error("Faucet returned no transaction.");
-  await waitReceipt(hash);
+}
+
+/**
+ * Fund `to` from the published genesis key.
+ * Docs (Public devnet): there is no faucet — fund once from genesis.values.env via a plain transfer.
+ * Gas ≥250k for brand-new accounts (Amsterdam+).
+ */
+export async function fundFromShared(to: Address, amount = FUND_AMOUNT_WEI): Promise<Hex> {
+  const funderBal = await balance(SHARED_FUNDER);
+  if (funderBal < amount + LEGACY_GAS_PRICE * FUND_TRANSFER_GAS) {
+    throw new Error(
+      "Shared genesis funder is low on ETH. Everyone shares that key — wait and retry, or ask the stall.",
+    );
+  }
+  const hash = await sendLegacy(SHARED_FUNDER_KEY, { to, value: amount, gas: FUND_TRANSFER_GAS });
+  const receipt = await waitReceipt(hash);
+  if (receipt.status !== "0x1") {
+    throw new Error("Shared-key fund transfer reverted. Retry — nonce collisions on the shared funder are expected.");
+  }
   return hash;
+}
+
+/** Optional leftover RPC some sidecars still expose. Prefer fundFromShared. */
+async function fundFromSkandhaRpc(to: Address): Promise<Hex> {
+  const result = (await rpc("skandha_explorer_faucet", [to], GATEWAY_URL)) as { txHash?: Hex } | Hex;
+  const hash = typeof result === "string" ? result : result.txHash;
+  if (!hash) throw new Error("skandha_explorer_faucet returned no transaction");
+  const receipt = await waitReceipt(hash);
+  if (receipt.status !== "0x1") throw new Error("Faucet transfer reverted");
+  return hash;
+}
+
+/** Fund an address: shared genesis key first (docs), then optional skandha faucet fallback. */
+export async function fundFromFaucet(to: Address): Promise<Hex> {
+  try {
+    return await fundFromShared(to);
+  } catch (sharedError) {
+    try {
+      return await fundFromSkandhaRpc(to);
+    } catch {
+      throw sharedError;
+    }
+  }
 }
 
 export async function sendLegacy(key: Hex, tx: { to?: Address; data?: Hex; value?: bigint; gas?: bigint }): Promise<Hex> {
   const account = privateKeyToAccount(key);
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const next = Number(await rpc("eth_getTransactionCount", [account.address, "pending"]));
+  const gasPrice = await networkGasPrice();
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const next = Number(await rpc("eth_getTransactionCount", [account.address, "pending"], ETHREX_URL));
     const raw = await account.signTransaction({
       chainId: CHAIN_ID,
       nonce: next,
@@ -67,15 +105,16 @@ export async function sendLegacy(key: Hex, tx: { to?: Address; data?: Hex; value
       value: tx.value ?? 0n,
       data: tx.data ?? "0x",
       gas: tx.gas ?? LEGACY_GAS,
-      gasPrice: LEGACY_GAS_PRICE,
+      gasPrice,
       type: "legacy",
     });
     try {
-      return (await rpc("eth_sendRawTransaction", [raw])) as Hex;
+      // Legacy txs → ethrex. Frame txs use the sidecar GATEWAY_URL elsewhere.
+      return (await rpc("eth_sendRawTransaction", [raw], ETHREX_URL)) as Hex;
     } catch (error) {
       const message = error instanceof Error ? error.message : "";
-      if (!/nonce/i.test(message) || attempt === 7) throw error;
-      await sleep(400);
+      if (!/nonce/i.test(message) || attempt === 11) throw error;
+      await sleep(200 + Math.floor(Math.random() * 400));
     }
   }
   throw new Error("legacy send failed");
@@ -84,14 +123,16 @@ export async function sendLegacy(key: Hex, tx: { to?: Address; data?: Hex; value
 export async function waitReceipt(hash: Hex, timeoutMs = 120_000): Promise<{ status: string; contractAddress?: Address }> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const receipt = (await rpc("eth_getTransactionReceipt", [hash])) as {
+    const receipt = (await rpc("eth_getTransactionReceipt", [hash], ETHREX_URL)) as {
       status?: string;
       contractAddress?: Address;
     } | null;
     if (receipt) return { status: receipt.status ?? "0x0", contractAddress: receipt.contractAddress };
     await sleep(2000);
   }
-  throw new Error("transaction was not mined within 120s");
+  throw new Error(
+    `Transaction ${hash} was not mined within ${Math.round(timeoutMs / 1000)}s. The public ethrex may be stalled — check the explorer and retry.`,
+  );
 }
 
 function artifact(name: "ShepherdAccount" | "ShepherdPolicy" | "ShepherdVault"): Hex {

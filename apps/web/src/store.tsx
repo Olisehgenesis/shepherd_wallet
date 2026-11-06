@@ -482,7 +482,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   async function faucetOwner() {
-    return work("Asking the faucet", async () => {
+    return work("Funding frame signer from shared genesis", async () => {
       const key = ownerKey ?? generatePrivateKey();
       if (!ownerKey) {
         sessionStorage.setItem(OWNER, key);
@@ -490,16 +490,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       }
       const owner = privateKeyToAccount(key).address;
       const result = await ensureFunds(owner);
-      push("faucet", "clear", result);
+      push("fundFromShared", "clear", result);
       await refreshWallet();
     });
   }
 
   async function faucetBrowser() {
     if (!wallet) return false;
-    return work("Asking the faucet for the browser wallet", async () => {
+    return work("Funding browser wallet from shared genesis", async () => {
       await fundFromFaucet(wallet.address);
-      push("faucet", "clear", "browser");
+      push("fundFromShared", "clear", "browser");
       await refreshWallet();
     });
   }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { isAddress, type Address } from "viem";
-import { CHAIN_ID, CHAIN_NAME, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
+import { CHAIN_ID, CHAIN_NAME, ETHREX_URL, EXPLORER_URL, GATEWAY_URL } from "../../../packages/core/src/config.js";
 import { useStore } from "./store";
 import { Modal, shortAddress } from "./ui";
 import { explorerAddress, walletProjectId } from "./wallet";
@@ -70,7 +70,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
             Connect a browser wallet. Shepherd will add and switch it to <strong>{CHAIN_NAME}</strong> (chain {CHAIN_ID}). Frame hashes still use the owner signer in this tab.
           </p>
           <p className="lede">
-            RPC {GATEWAY_URL.replace("https://", "")}
+            ethrex {ETHREX_URL.replace("https://", "")} · sidecar {GATEWAY_URL.replace("https://", "")}
           </p>
           <div className="modal-section">
             <h3>Browser wallets</h3>
@@ -269,13 +269,13 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
           )}
 
           <div className="modal-section">
-            <h3>Devnet faucet</h3>
+            <h3>Get funds</h3>
             <p className="lede">
-              Public method <code>skandha_explorer_faucet</code> on the gateway. Once per address per hour. It is empty sometimes — if so, reuse a funded key or ask the stall.
+              Docs: there is no faucet. Shepherd funds you once from the published genesis key (same as workshop <code>step_1_check</code>). Shared key → nonce collisions possible. Never use that key on a real network.
             </p>
             <div className="row">
               <button className="btn" type="button" disabled={store.busy} onClick={() => void store.faucetOwner()}>
-                Faucet frame signer
+                Fund frame signer
               </button>
               {store.wallet && (
                 <button
@@ -284,7 +284,7 @@ export function WalletModal({ open, onClose }: { open: boolean; onClose: () => v
                   disabled={store.busy || !store.walletOnDevnet}
                   onClick={() => void store.faucetBrowser()}
                 >
-                  Faucet browser wallet
+                  Fund browser wallet
                 </button>
               )}
             </div>

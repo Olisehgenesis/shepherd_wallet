@@ -4,8 +4,8 @@ import {
   CHAIN_ID,
   CHAIN_ID_HEX,
   CHAIN_NAME,
+  ETHREX_URL,
   EXPLORER_URL,
-  GATEWAY_URL,
   NATIVE_CURRENCY,
 } from "../../../packages/core/src/config.js";
 
@@ -66,7 +66,9 @@ export async function switchToDevnet(provider: Eip1193): Promise<number> {
           chainId: CHAIN_ID_HEX,
           chainName: CHAIN_NAME,
           nativeCurrency: { ...NATIVE_CURRENCY },
-          rpcUrls: [GATEWAY_URL],
+          // MetaMask needs ethrex for eth_sendRawTransaction / balances.
+          // Frame txs still go through the sidecar from the Shepherd app.
+          rpcUrls: [ETHREX_URL],
           blockExplorerUrls: [EXPLORER_URL],
         },
       ],
@@ -133,7 +135,7 @@ export async function connectWalletConnect(): Promise<ConnectedWallet> {
     projectId,
     optionalChains: [CHAIN_ID],
     showQrModal: true,
-    rpcMap: { [CHAIN_ID]: GATEWAY_URL },
+    rpcMap: { [CHAIN_ID]: ETHREX_URL },
     metadata: {
       name: "Shepherd",
       description: "A scoped agent wallet",
@@ -217,4 +219,4 @@ export function explorerAddress(address: string) {
   return `${EXPLORER_URL}?address=${address}`;
 }
 
-export { CHAIN_ID, CHAIN_NAME, GATEWAY_URL, EXPLORER_URL };
+export { CHAIN_ID, CHAIN_NAME, ETHREX_URL, EXPLORER_URL };

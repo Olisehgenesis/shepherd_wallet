@@ -63,6 +63,7 @@ function rejected(error: unknown, route: Outcome["route"]): Outcome {
 export async function ensureFunds(owner: Address): Promise<"funded" | "already"> {
   const have = await balance(owner);
   if (have > 50_000_000_000_000_000n) return "already";
+  // Docs: no faucet. Fund once from the published genesis key via ethrex.
   await fundFromFaucet(owner);
   return "funded";
 }

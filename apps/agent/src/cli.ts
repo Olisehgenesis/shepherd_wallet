@@ -48,8 +48,8 @@ function line(step: string, outcome: Outcome) {
 
 function friendly(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  if (/faucet|rate|once per/i.test(message)) {
-    return `${message} — faucet is once per address per hour. Reuse .shepherd-state.json or wait.`;
+  if (/funder|nonce|shared/i.test(message)) {
+    return `${message} — shared genesis key is busy; retry in a few seconds or reuse .shepherd-state.json.`;
   }
   if (/already|stake/i.test(message)) return message;
   return message;
@@ -60,9 +60,9 @@ async function demo() {
   const owner = privateKeyToAccount(state.ownerKey).address;
   const session = privateKeyToAccount(state.sessionKey).address;
   console.log(`chain expected ${CHAIN_ID}; live ${await chainId()}`);
-  console.log("funding owner (address omitted from this log)");
+  console.log("funding owner from shared genesis key (address omitted)");
   const funded = await ensureFunds(owner);
-  console.log(`faucet\t${funded}`);
+  console.log(`fund-from-shared\t${funded}`);
   let deployed: { policy: `0x${string}`; vault: `0x${string}`; account: `0x${string}` };
   if (state.account && state.policy && state.vault) {
     console.log("reusing deployed account from .shepherd-state.json");
