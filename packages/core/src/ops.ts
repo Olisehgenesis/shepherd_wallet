@@ -1,11 +1,25 @@
-import type { Address, Hex } from "viem";
+import { encodeFunctionData, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { ALLOW, HIGH } from "./abi.js";
-import { balance, chainId, code, deployStack, fundFromFaucet, nonce, readRule, readSession, readStake, setRule, waitReceipt } from "./chain.js";
+import { accountAbi, ALLOW, HIGH } from "./abi.js";
+import {
+  balance,
+  chainId,
+  code,
+  deployStack,
+  fundFromFaucet,
+  nonce,
+  readRule,
+  readSession,
+  readStake,
+  sendLegacy,
+  setRule,
+  waitReceipt,
+} from "./chain.js";
 import { CHAIN_ID, EXPIRY_VERIFIER, SESSION_VALUE_CAP, STAKE_WEI } from "./config.js";
 import {
   buildAgentTx,
   buildOwnerTx,
+  fundCallData,
   grantCall,
   packTx,
   p256Call,
@@ -14,6 +28,8 @@ import {
   signP256,
   signSecp,
   stakeCall,
+  transferCall,
+  type Call,
 } from "./frame.js";
 import { drainCall, mirror, pingCall, PING, sweepCall, SWEEP, type MirrorVerdict } from "./mirror.js";
 import { ChainError, rpc } from "./rpc.js";
@@ -62,7 +78,7 @@ export async function setup(ownerKey: Hex): Promise<{ policy: Address; vault: Ad
   return deployed;
 }
 
-async function ownerFrame(account: Address, ownerKey: Hex, call: ReturnType<typeof grantCall>): Promise<Outcome> {
+async function ownerFrame(account: Address, ownerKey: Hex, call: Call): Promise<Outcome> {
   const owner = privateKeyToAccount(ownerKey).address;
   const tx = await signSecp(buildOwnerTx(account, owner, await nonce(account), call), ownerKey);
   const packed = packTx(tx);
@@ -73,6 +89,24 @@ async function ownerFrame(account: Address, ownerKey: Hex, call: ReturnType<type
     return rejected(error, "alt");
   }
 }
+
+/** Send ETH from the Shepherd account on the owner path. */
+export function sendFromAccount(account: Address, ownerKey: Hex, to: Address, value: bigint): Promise<Outcome> {
+  return ownerFrame(account, ownerKey, transferCall(to, value));
+}
+
+/** Top up the Shepherd account by calling fund() from the frame-signer EOA. Plain transfers revert. */
+export async function topUpAccount(account: Address, funderKey: Hex, value: bigint): Promise<Outcome> {
+  try {
+    const data = encodeFunctionData({ abi: accountAbi, functionName: "fund" });
+    const hash = await sendLegacy(funderKey, { to: account, data, value, gas: 120_000n });
+    return mined(hash, "canonical");
+  } catch (error) {
+    return rejected(error, "canonical");
+  }
+}
+
+export { fundCallData };
 
 export function grantSession(
   account: Address,

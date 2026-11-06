@@ -176,3 +176,18 @@ export function stakeCall(amount: bigint): Call {
     state: 300_000n,
   };
 }
+
+/** Owner-path ETH transfer. Empty calldata to an EOA or contract that accepts value. */
+export function transferCall(to: Address, value: bigint): Call {
+  return {
+    to,
+    value,
+    data: "0x",
+    execution: SENDER_GAS,
+    state: SENDER_STATE,
+  };
+}
+
+export function fundCallData(): Hex {
+  return encodeFunctionData({ abi: accountAbi, functionName: "fund" });
+}

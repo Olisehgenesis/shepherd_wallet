@@ -58,7 +58,7 @@ The app (http://localhost:5173) is a set of pages, not one screen.
 | `/trust` | CROPS, and what is not claimed |
 | `/mcp` | Spawning a child agent |
 | `/console` | The next unfinished step |
-| `/console/wallet` | Injected wallet or WalletConnect |
+| `/console/wallet` | Opens the wallet popup (balance, send, receive, signers) |
 | `/console/session` | Grant and revoke |
 | `/console/intents` | Ping, drain, sweep |
 | `/console/reads` | Anon-RPC reads |

@@ -4,7 +4,7 @@ import { Site } from "./site";
 import { Mark } from "./ui";
 
 const products = [
-  ["/console/wallet", "Wallet", "Injected or WalletConnect"],
+  ["/console/wallet", "Wallet", "Connect-wallet popup"],
   ["/console/session", "Session", "A key that is not the owner"],
   ["/console/intents", "Intents", "Ping, drain, or wait"],
   ["/console/reads", "Reads", "Anon-RPC by default"],
@@ -93,7 +93,7 @@ export function Landing() {
             </ul>
             <div className="row">
               <Link className="btn" to="/console/wallet">
-                Connect a wallet
+                Connect wallet
               </Link>
               <Link className="btn-ghost" to="/how">
                 See the path
@@ -147,8 +147,8 @@ export function Landing() {
               <b>1</b>
               <div>
                 <h3>Connect</h3>
-                <p>Pick an injected wallet or WalletConnect. Shepherd records the account. It does not ask that wallet to sign a frame hash.</p>
-                <Link to="/console/wallet">Open Wallet</Link>
+                <p>Pick an injected wallet or WalletConnect from the connect-wallet popup. Shepherd records the account. It does not ask that wallet to sign a frame hash.</p>
+                <Link to="/console/wallet">Open connect wallet</Link>
               </div>
             </li>
             <li>
@@ -247,7 +247,7 @@ export function Docs() {
         <h2>In the console</h2>
         <ol>
           <li>
-            Open <Link to="/console/wallet">Wallet</Link> and connect. Any EIP-6963 wallet can appear. WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>.
+            Open the console and use <Link to="/console/wallet">Connect wallet</Link>. Any EIP-6963 wallet can appear. WalletConnect needs <code>VITE_WALLETCONNECT_PROJECT_ID</code>.
           </li>
           <li>
             Open <Link to="/console">Overview</Link> and choose Prepare the account. The faucet runs once, then the three contracts deploy. This can take a minute. The loader stays up until the receipt lands.

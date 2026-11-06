@@ -1,98 +1,135 @@
-import { useState } from "react";
-import { NavLink, Link } from "react-router-dom";
-import { walletProjectId } from "./wallet";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useStore } from "./store";
 import { Empty, Loader, Mark, shortAddress } from "./ui";
+import { WalletModal } from "./WalletModal";
 
 const nav = [
   ["/console", "Overview"],
-  ["/console/wallet", "Wallet"],
   ["/console/session", "Session"],
   ["/console/intents", "Intents"],
   ["/console/reads", "Reads"],
   ["/console/mempool", "Mempool"],
 ] as const;
 
+const WalletUi = createContext<{ openWallet: () => void } | null>(null);
+
+function useWalletUi() {
+  const value = useContext(WalletUi);
+  if (!value) throw new Error("Wallet UI is missing");
+  return value;
+}
+
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const store = useStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [walletOpen, setWalletOpen] = useState(false);
+  const openWallet = useCallback(() => setWalletOpen(true), []);
+  const closeWallet = useCallback(() => {
+    setWalletOpen(false);
+    if (location.pathname === "/console/wallet") navigate("/console", { replace: true });
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    if (location.pathname === "/console/wallet") setWalletOpen(true);
+  }, [location.pathname]);
+
   return (
-    <div className="shell">
-      <aside className="side">
-        <Link className="brand" to="/">
-          <Mark />
-          Shepherd
-        </Link>
-        <nav aria-label="Console">
-          {nav.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === "/console"}>
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        <p className="side-note">
-          <Link to="/docs">How to use</Link>
-        </p>
-      </aside>
-      <div className="main">
-        <header className="top">
-          <div className="chips">
-            <span className="chip">{store.chainLabel}</span>
-            <span className={store.anonState === "ready" ? "chip ok" : store.anonState === "failed" ? "chip bad" : "chip wait"}>
-              {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
-            </span>
-            <span className="chip info">{store.anonShare}% anon reads</span>
-            {store.wallet && <span className="chip">{store.wallet.name}</span>}
-          </div>
-        </header>
-        {store.status && <Loader label={store.status} />}
-        {store.error && (
-          <div className="callout bad" role="alert">
-            {store.error}
-          </div>
-        )}
-        {children}
-        <section className="card">
-          <h2>Ops log</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Method</th>
-                <th>Route</th>
-                <th>Verdict</th>
-              </tr>
-            </thead>
-            <tbody>
-              {store.logs.length === 0 && (
+    <WalletUi.Provider value={{ openWallet }}>
+      <div className="shell">
+        <aside className="side">
+          <Link className="brand" to="/">
+            <Mark />
+            Shepherd
+          </Link>
+          <nav aria-label="Console">
+            {nav.map(([to, label]) => (
+              <NavLink key={to} to={to} end={to === "/console"}>
+                {label}
+              </NavLink>
+            ))}
+            <button className="side-wallet" type="button" onClick={openWallet}>
+              Wallet
+            </button>
+          </nav>
+          <p className="side-note">
+            <Link to="/docs">How to use</Link>
+          </p>
+        </aside>
+        <div className="main">
+          <header className="top">
+            <div className="chips">
+              <span className="chip">{store.chainLabel}</span>
+              <span className={store.anonState === "ready" ? "chip ok" : store.anonState === "failed" ? "chip bad" : "chip wait"}>
+                {store.anonState === "ready" ? "Anon-RPC harness" : store.anonState === "failed" ? "Harness failed" : "Harness starting"}
+              </span>
+              <span className="chip info">{store.anonShare}% anon reads</span>
+            </div>
+            <button
+              className={store.deployed || store.wallet ? "wallet-chip connected" : "btn"}
+              type="button"
+              onClick={openWallet}
+            >
+              {store.deployed
+                ? `${store.live?.balance ?? store.portfolio?.accountEth ?? "0"} ETH · ${shortAddress(store.deployed.account)}`
+                : store.wallet
+                  ? `${store.wallet.name} · ${shortAddress(store.wallet.address)}`
+                  : "Connect wallet"}
+            </button>
+          </header>
+          {store.status && <Loader label={store.status} />}
+          {store.error && (
+            <div className="callout bad" role="alert">
+              {store.error}
+            </div>
+          )}
+          {children}
+          <section className="card">
+            <h2>Ops log</h2>
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan={3}>No calls yet. The first one is the harness reading the chain id.</td>
+                  <th>Method</th>
+                  <th>Route</th>
+                  <th>Verdict</th>
                 </tr>
-              )}
-              {store.logs.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.method}</td>
-                  <td>{row.route}</td>
-                  <td>{row.verdict}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+              </thead>
+              <tbody>
+                {store.logs.length === 0 && (
+                  <tr>
+                    <td colSpan={3}>No calls yet. The first one is the harness reading the chain id.</td>
+                  </tr>
+                )}
+                {store.logs.map((row) => (
+                  <tr key={row.id}>
+                    <td>{row.method}</td>
+                    <td>{row.route}</td>
+                    <td>{row.verdict}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        </div>
       </div>
-    </div>
+      <WalletModal open={walletOpen} onClose={closeWallet} />
+    </WalletUi.Provider>
   );
 }
 
 export function Overview() {
   const store = useStore();
+  const { openWallet } = useWalletUi();
   const next = !store.wallet
-    ? { href: "/console/wallet", label: "Connect a wallet", title: "Start by connecting a wallet", body: "Shepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set." }
+    ? { kind: "wallet" as const, label: "Connect a wallet", title: "Start by connecting a wallet", body: "Shepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set." }
     : !store.deployed
-      ? { href: "", label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare asks the faucet for the frame signer, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
+      ? { kind: "action" as const, label: "Prepare the account", title: "The account is not on the devnet yet", body: "Prepare asks the faucet for the frame signer, deploys the three contracts, and writes the vault rules. The loader stays until the receipts land." }
       : !store.live?.active
-        ? { href: "/console/session", label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. The owner path is already able to stake." }
+        ? { kind: "link" as const, href: "/console/session", label: "Issue a session", title: "The account is deployed", body: "Grant a session key before the agent can ping. The owner path is already able to stake." }
         : !store.live.staked
-          ? { href: "/console/mempool", label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
-          : { href: "/console/intents", label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. The ping is the call the policy allows." };
+          ? { kind: "link" as const, href: "/console/mempool", label: "Stake the account", title: "The session is active", body: "The agent path reads the policy contract. Stake the account, then send the ping on the alt mempool." }
+          : { kind: "link" as const, href: "/console/intents", label: "Send an in-policy ping", title: "Ready for a ping", body: "The account is staked and the session is active. The ping is the call the policy allows." };
 
   return (
     <>
@@ -109,7 +146,11 @@ export function Overview() {
           </p>
         )}
         <div className="row">
-          {next.href ? (
+          {next.kind === "wallet" ? (
+            <button className="btn" type="button" onClick={openWallet}>
+              {next.label}
+            </button>
+          ) : next.kind === "link" ? (
             <Link className="btn" to={next.href}>
               {next.label}
             </Link>
@@ -135,60 +176,11 @@ export function Overview() {
 }
 
 export function WalletPage() {
-  const store = useStore();
-  const projectId = walletProjectId();
   return (
-    <>
-      <header className="page-head">
-        <h1>Wallet</h1>
-        <p>The connected account is you. Frame hashes are signed by a separate key in this tab, because injected wallets do not sign EIP-8141 digests.</p>
-      </header>
-      {store.wallet ? (
-        <section className="card">
-          <h2>Connected</h2>
-          <p>
-            {store.wallet.name} · {shortAddress(store.wallet.address)}
-            {store.wallet.chainId ? ` · chain ${store.wallet.chainId}` : ""}
-          </p>
-          {store.wallet.chainId !== 1337 && <p className="lede">This wallet is not on chain 1337. Shepherd still submits frames through the devnet gateway.</p>}
-          <div className="row">
-            <button className="btn-ghost" type="button" onClick={store.disconnect}>
-              Disconnect
-            </button>
-            <Link className="btn" to="/console">
-              Continue
-            </Link>
-          </div>
-        </section>
-      ) : (
-        <Empty
-          title="No wallet connected"
-          body="Choose an announced browser wallet, or open a WalletConnect QR code."
-        />
-      )}
-      <section className="card">
-        <h2>Injected</h2>
-        {store.wallets.length === 0 && <p>No EIP-6963 wallet has announced itself in this browser yet.</p>}
-        {store.wallets.map((wallet) => (
-          <div className="wallet" key={wallet.uuid}>
-            <span>{wallet.name}</span>
-            <button className="btn" type="button" disabled={store.busy} onClick={() => void store.connect(wallet.uuid, wallet.name)}>
-              Connect
-            </button>
-          </div>
-        ))}
-      </section>
-      <section className="card">
-        <h2>WalletConnect</h2>
-        {projectId ? (
-          <button className="btn" type="button" disabled={store.busy} onClick={() => void store.connectWc()}>
-            Open WalletConnect
-          </button>
-        ) : (
-          <p>Set VITE_WALLETCONNECT_PROJECT_ID and restart the dev server. Injected wallets do not need it.</p>
-        )}
-      </section>
-    </>
+    <Empty
+      title="Wallet opens as a popup"
+      body="Use the wallet button in the top bar for balance, send, receive, and signers. Closing the dialog brings you back to Overview."
+    />
   );
 }
 

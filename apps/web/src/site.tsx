@@ -29,7 +29,7 @@ export function Site({ children }: { children: React.ReactNode }) {
             <summary>Console</summary>
             <div>
               <Link to="/console" onClick={() => setOpen(false)}>Overview</Link>
-              <Link to="/console/wallet" onClick={() => setOpen(false)}>Wallet</Link>
+              <Link to="/console/wallet" onClick={() => setOpen(false)}>Connect wallet</Link>
               <Link to="/console/session" onClick={() => setOpen(false)}>Session</Link>
               <Link to="/console/intents" onClick={() => setOpen(false)}>Intents</Link>
               <Link to="/console/reads" onClick={() => setOpen(false)}>Reads</Link>
