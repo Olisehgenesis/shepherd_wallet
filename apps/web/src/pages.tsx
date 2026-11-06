@@ -358,8 +358,8 @@ export function Docs() {
             Reveal it only if another process on this machine needs it.
           </li>
           <li>
-            Open <Link to={paths.policy}>Policy</Link> inside an agent to add allow / high-risk rules. Open{" "}
-            <Link to={paths.agents}>Agents</Link> to spawn or revoke child sessions.
+            Open <Link to={paths.agents}>Agents</Link> to grant a session, edit what it may do, and spawn or revoke
+            children. Permissions use allow, needs co-sign, or deny.
           </li>
           <li>
             Open <Link to={paths.mempool}>You → Demo → Mempool</Link>, stake 0.012 ETH, then send the ping to the alt

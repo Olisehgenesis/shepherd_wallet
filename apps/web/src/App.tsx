@@ -12,7 +12,7 @@ import {
 import { Docs, How, Landing, McpPage, Trust } from "./pages";
 import { AgentPlaceholder, AgentSection } from "./shell/AgentSection";
 import { AppShell } from "./shell/AppShell";
-import { legacyRedirects } from "./shell/destinations";
+import { legacyRedirects, paths } from "./shell/destinations";
 import { DemoHub, YouLayout, YouPage } from "./shell/YouPage";
 import { StoreProvider } from "./store";
 
@@ -32,7 +32,8 @@ export function App() {
             <Route path="agents" element={<AgentSection />}>
               <Route index element={<AgentsPage />} />
               <Route path="session" element={<SessionPage />} />
-              <Route path="policy" element={<PolicyPage />} />
+              <Route path="policy" element={<Navigate to={paths.agentPolicy("root")} replace />} />
+              <Route path=":agentId/permissions" element={<PolicyPage />} />
               <Route path=":agentId/policy" element={<PolicyPage />} />
               <Route path=":agentId" element={<AgentPlaceholder />} />
             </Route>

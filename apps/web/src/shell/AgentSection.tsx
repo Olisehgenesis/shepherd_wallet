@@ -5,10 +5,10 @@ import { paths } from "./destinations";
 const sectionLinks = [
   { to: paths.agents, label: "Agents", end: true },
   { to: paths.session, label: "Session", end: true },
-  { to: paths.policy, label: "Policy", end: false },
+  { to: paths.policy, label: "Permissions", end: false },
 ] as const;
 
-/** Layout for agent routes. Policy and grant/revoke stay with the agent, not in primary nav. */
+/** Layout for agent routes. Permissions and grant/revoke stay with the agent, not in primary nav. */
 export function AgentSection() {
   const { pathname } = useLocation();
   return (
@@ -20,7 +20,11 @@ export function AgentSection() {
             to={item.to}
             end={item.end}
             className={({ isActive }) =>
-              isActive || (item.to === paths.policy && pathname.endsWith("/policy")) ? "is-active" : undefined
+              isActive ||
+              (item.to === paths.policy &&
+                (pathname.endsWith("/permissions") || pathname.endsWith("/policy")))
+                ? "is-active"
+                : undefined
             }
           >
             {item.label}
@@ -45,14 +49,14 @@ export function AgentPlaceholder() {
       <header className="page-head">
         <p className="mono-label">Agent</p>
         <h1>{label}</h1>
-        <p>Grant, revoke, and policy for this agent. The permission editor lives on Policy.</p>
+        <p>Grant, revoke, and permissions for this agent. Edit what it may do on Permissions.</p>
       </header>
       <div className="row">
         <Button asChild>
           <Link to={paths.session}>Grant or revoke</Link>
         </Button>
         <Button asChild variant="outline">
-          <Link to={paths.agentPolicy(agentId)}>Policy</Link>
+          <Link to={paths.agentPolicy(agentId)}>Permissions</Link>
         </Button>
         <Button asChild variant="ghost">
           <Link to={paths.agents}>All agents</Link>

@@ -76,6 +76,7 @@ import {
   type PolicyRuleRow,
   type RuleMode,
 } from "./persistence";
+import { plainSignature } from "./selectors";
 import {
   CHAIN_NAME,
   clearLastProvider,
@@ -142,6 +143,7 @@ interface SpawnInput {
   parentId: string;
   valueCapEth: string;
   ttlSeconds: number;
+  name?: string;
 }
 
 const OWNER = "shepherd.owner";
@@ -156,10 +158,10 @@ function loadHex(key: string): Hex | null {
 }
 
 function normalizeSelector(input: string): Hex {
-  const trimmed = input.trim();
+  const trimmed = plainSignature(input);
   if (/^0x[0-9a-fA-F]{8}$/.test(trimmed)) return trimmed.toLowerCase() as Hex;
   if (trimmed.includes("(") && trimmed.endsWith(")")) return toFunctionSelector(trimmed);
-  throw new Error("Selector must be 0x + 8 hex chars, or a signature like transfer(address,uint256).");
+  throw new Error("Selector must be 0x + 8 hex chars, or a signature like ping() or vault.ping().");
 }
 
 function normalizeCalldata(selector: Hex, raw: string): Hex {
@@ -230,7 +232,7 @@ interface Store {
   depositFromBrowser: (amountEth: string) => Promise<boolean>;
   faucetOwner: () => Promise<boolean>;
   faucetBrowser: () => Promise<boolean>;
-  savePolicyRule: (input: { target: string; selectorOrSig: string; mode: RuleMode; label?: string }) => Promise<void>;
+  savePolicyRule: (input: { target: string; selectorOrSig: string; mode: RuleMode; label?: string }) => Promise<boolean>;
   removePolicyRule: (target: Address, selector: Hex) => Promise<void>;
   refreshPolicyRules: () => Promise<void>;
   spawnAgent: (input: SpawnInput) => Promise<string | null>;
@@ -921,8 +923,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   async function savePolicyRule(input: { target: string; selectorOrSig: string; mode: RuleMode; label?: string }) {
-    if (!deployed || !ownerKey) return;
-    await work("Writing policy rule", async () => {
+    if (!deployed || !ownerKey) return false;
+    return work("Writing policy rule", async () => {
       if (!isAddress(input.target)) throw new Error("Target must be a valid address.");
       if (input.mode !== 0 && input.mode !== ALLOW && input.mode !== HIGH) throw new Error("Mode must be deny, allow, or high-risk.");
       const selector = normalizeSelector(input.selectorOrSig);
@@ -991,6 +993,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (outcome.verdict !== "admitted") throw new Error(`Spawn ${outcome.verdict}: ${outcome.reason}`);
       const record: AgentRecord = {
         id: `agent_${crypto.getRandomValues(new Uint8Array(4)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "")}`,
+        name: input.name?.trim().slice(0, 48) || `Child agent ${local.length + 1}`,
         parentId: parent.id,
         depth: parent.depth + 1,
         address,
@@ -1002,7 +1005,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveAgents(deployed.account, next);
       setAgents(next);
       created = record.id;
-      notify(`Spawned ${record.id}. Reveal its key once from the Agents page.`);
+      notify(`Spawned ${record.name ?? record.id}. Reveal its key from the agent row.`);
     });
     return created;
   }
