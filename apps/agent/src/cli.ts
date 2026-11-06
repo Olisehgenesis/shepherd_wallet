@@ -12,6 +12,7 @@ import {
   injectedCall,
   posture,
   readSession,
+  readStake,
   setup,
   stake,
   type Outcome,
@@ -45,22 +46,47 @@ function line(step: string, outcome: Outcome) {
   console.log(`${step}\t${outcome.verdict}\t${outcome.reason}\t${outcome.route}${link}`);
 }
 
+function friendly(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/faucet|rate|once per/i.test(message)) {
+    return `${message} — faucet is once per address per hour. Reuse .shepherd-state.json or wait.`;
+  }
+  if (/already|stake/i.test(message)) return message;
+  return message;
+}
+
 async function demo() {
   const state = load();
   const owner = privateKeyToAccount(state.ownerKey).address;
   const session = privateKeyToAccount(state.sessionKey).address;
   console.log(`chain expected ${CHAIN_ID}; live ${await chainId()}`);
-  console.log(`funding owner (address omitted from this log)`);
-  await ensureFunds(owner);
-  console.log("deploying policy, vault, account");
-  const deployed = await setup(state.ownerKey);
-  state.policy = deployed.policy;
-  state.vault = deployed.vault;
-  state.account = deployed.account;
-  save(state);
-  const expiry = BigInt(Math.floor(Date.now() / 1000) + 86_400);
-  line("grant-session", await grantSession(deployed.account, state.ownerKey, session, expiry));
+  console.log("funding owner (address omitted from this log)");
+  const funded = await ensureFunds(owner);
+  console.log(`faucet\t${funded}`);
+  let deployed: { policy: `0x${string}`; vault: `0x${string}`; account: `0x${string}` };
+  if (state.account && state.policy && state.vault) {
+    console.log("reusing deployed account from .shepherd-state.json");
+    deployed = { account: state.account, policy: state.policy, vault: state.vault };
+  } else {
+    console.log("deploying policy, vault, account");
+    deployed = await setup(state.ownerKey);
+    state.policy = deployed.policy;
+    state.vault = deployed.vault;
+    state.account = deployed.account;
+    save(state);
+  }
+  const liveSession = await readSession(deployed.account, session);
+  if (!liveSession.active) {
+    const expiry = BigInt(Math.floor(Date.now() / 1000) + 86_400);
+    line("grant-session", await grantSession(deployed.account, state.ownerKey, session, expiry));
+  } else {
+    console.log("grant-session\tskipped\talready-active\tlocal");
+  }
   const liveExpiry = await expiryIfLive(BigInt(Math.floor(Date.now() / 1000)));
+  if (!liveExpiry) {
+    console.log("expiry-frame\tskipped\tverifier-has-no-code\tlocal");
+    console.log("note\trevoke is the kill switch; an attached expiry frame is omitted when the verifier has no code");
+  }
   const base = {
     account: deployed.account,
     policy: deployed.policy,
@@ -68,8 +94,14 @@ async function demo() {
     expiry: liveExpiry,
   };
   line("canonical-storage", await agentAct({ ...base, call: inPolicyCall(deployed.vault) }, { route: "canonical", sign: true }));
-  line("alt-unstaked", await agentAct({ ...base, call: inPolicyCall(deployed.vault) }, { route: "alt", sign: true }));
-  line("stake", await stake(deployed.account, state.ownerKey));
+  const stakeRow = await readStake(deployed.account);
+  if (!stakeRow.staked) {
+    line("alt-unstaked", await agentAct({ ...base, call: inPolicyCall(deployed.vault) }, { route: "alt", sign: true }));
+    line("stake", await stake(deployed.account, state.ownerKey));
+  } else {
+    console.log("alt-unstaked\tskipped\talready-staked\tlocal");
+    console.log("stake\tskipped\talready-staked\tlocal");
+  }
   line("in-policy", await agentAct({ ...base, call: inPolicyCall(deployed.vault) }, { route: "alt", sign: true }));
   line("injected", await agentAct({ ...base, call: injectedCall() }, { route: "alt", sign: true }));
   line("high-risk-wait", await agentAct({ ...base, call: highRiskCall(deployed.vault) }, { route: "alt", sign: false }));
@@ -84,6 +116,7 @@ async function demo() {
   const row = await readSession(deployed.account, session);
   console.log(`session active=${after.active} staked=${after.staked} cap=${row.valueCap.toString()}`);
   console.log("owner and session keys are in .shepherd-state.json (gitignored, devnet only)");
+  console.log("next: npm run checklist   or   npm run mcp");
 }
 
 async function propose() {
@@ -100,21 +133,42 @@ async function propose() {
   );
   line("propose", outcome);
   if (outcome.reason !== "allow") return;
-  line("sign-and-submit", await agentAct(
-    {
-      account: state.account,
-      policy: state.policy,
-      sessionKey: state.sessionKey,
-      call: inPolicyCall(state.vault),
-    },
-    { route: "alt", sign: true },
-  ));
+  line(
+    "sign-and-submit",
+    await agentAct(
+      {
+        account: state.account,
+        policy: state.policy,
+        sessionKey: state.sessionKey,
+        call: inPolicyCall(state.vault),
+      },
+      { route: "alt", sign: true },
+    ),
+  );
+}
+
+async function checklist() {
+  console.log(`Shepherd demo checklist (~2 min)
+1. npm run demo          — expect in-policy admitted + explorer URL
+2. npm run dev           — open /console (or the Vercel URL)
+3. Intents → In-policy ping     → admitted
+4. Intents → Submit injected drain → rejected:TargetDenied
+5. Intents → High-risk, wait → waiting:NeedsCosign
+6. Intents → Co-sign and send → admitted
+7. Reads → Read through Anon-RPC → anon share near 100%
+8. Mempool → canonical reject, then alt after stake
+9. Agents → spawn a child, propose ping, cascade revoke
+10. Say out loud: agent key ≠ owner key; denial is in VERIFY before APPROVE
+
+Do not show .shepherd-state.json or the session-key reveal on camera.
+If expiry verifier has no code, revoke is the kill switch.
+MCP: npm run mcp  (see AGENTS.md)
+`);
 }
 
 const command = process.argv[2] ?? "demo";
-const run = command === "propose" ? propose : demo;
+const run = command === "propose" ? propose : command === "checklist" ? checklist : demo;
 run().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : "failed";
-  console.error(message);
+  console.error(friendly(error));
   process.exit(1);
 });

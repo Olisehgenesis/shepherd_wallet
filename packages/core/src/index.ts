@@ -6,3 +6,4 @@ export * from "./chain.js";
 export * from "./frame.js";
 export * from "./mirror.js";
 export * from "./ops.js";
+export * from "./scope.js";

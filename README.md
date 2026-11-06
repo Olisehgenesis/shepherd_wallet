@@ -48,7 +48,23 @@ npm run test:scope
 
 `npm run agent -- propose` is the small agent loop. It reads only the session key from that state file and submits an in-policy ping when the mirror says allow.
 
-The dashboard (http://localhost:5173) repeats those steps with buttons. Chain reads on the Reads page use the harness. If the harness fails, reads stay blocked. There is no silent clear-RPC fallback.
+The app (http://localhost:5173) is a set of pages, not one screen.
+
+| URL | Page |
+| --- | --- |
+| `/` | Landing |
+| `/how` | How a frame is decided |
+| `/docs` | How to use the console |
+| `/trust` | CROPS, and what is not claimed |
+| `/mcp` | Spawning a child agent |
+| `/console` | The next unfinished step |
+| `/console/wallet` | Injected wallet or WalletConnect |
+| `/console/session` | Grant and revoke |
+| `/console/intents` | Ping, drain, sweep |
+| `/console/reads` | Anon-RPC reads |
+| `/console/mempool` | Canonical against alt |
+
+WalletConnect needs `VITE_WALLETCONNECT_PROJECT_ID`. Injected wallets do not. Chain reads on `/console/reads` use the harness. If the harness fails, that page stays blocked.
 
 ## Demo map
 
