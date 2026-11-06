@@ -1,0 +1,290 @@
+[
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "landing__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/landing__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "landing__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/landing__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "how__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/how__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "how__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/how__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "docs__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/docs__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "docs__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/docs__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "trust__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/trust__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "trust__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/trust__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "mcp__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/mcp__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "mcp__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/mcp__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-session__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-session__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-session__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-session__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-session__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-session__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-session__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-session__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-policy__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-policy__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-policy__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-policy__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-policy__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-policy__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-policy__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-policy__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-agents__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-agents__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-agents__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-agents__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-agents__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-agents__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-agents__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-agents__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-intents__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-intents__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-intents__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-intents__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-intents__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-intents__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-intents__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-intents__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-approvals__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-approvals__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-approvals__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-approvals__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-approvals__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-approvals__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-approvals__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-approvals__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-reads__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-reads__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-reads__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-reads__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-reads__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-reads__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-reads__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-reads__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-mempool__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-mempool__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-mempool__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-mempool__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-mempool__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-mempool__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-mempool__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-mempool__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-activity__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-activity__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-activity__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-activity__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-activity__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-activity__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-activity__wallet-open",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-activity__wallet-open.png"
+  },
+  {
+    "type": "shot",
+    "dir": "desktop",
+    "name": "console-wallet__default",
+    "file": "/workspace/shepherd-ux-audit/screens/desktop/console-wallet__default.png"
+  },
+  {
+    "type": "shot",
+    "dir": "mobile",
+    "name": "console-wallet__default",
+    "file": "/workspace/shepherd-ux-audit/screens/mobile/console-wallet__default.png"
+  }
+]

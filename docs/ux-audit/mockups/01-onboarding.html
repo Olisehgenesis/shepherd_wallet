@@ -1,0 +1,32 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="_tokens.css"/>
+<title>Shepherd — First run</title>
+<style>
+  body { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .shell { width: min(440px, 100%); }
+  .mark { width: 40px; height: 40px; border-radius: 12px; background: var(--forest); display:grid; place-items:center; color:#e8f2ec; font-weight:700; margin-bottom: 18px; }
+  .steps { display:flex; gap:8px; margin: 18px 0 22px; }
+  .steps span { flex:1; height:4px; border-radius:999px; background: var(--sage); }
+  .steps span.on { background: var(--forest); }
+  .choice { display:flex; flex-direction:column; gap:10px; margin-top: 18px; }
+  .choice button { text-align:left; padding:14px 16px; border-radius:14px; border:1px solid var(--line); background:var(--card); }
+  .choice button strong { display:block; margin-bottom:4px; }
+  .choice button.primary { border-color: var(--forest); background: var(--sage-2); }
+  .fine { margin-top: 16px; font-size: 12px; color: var(--muted); }
+</style></head><body>
+<div class="shell">
+  <div class="mark">S</div>
+  <h1>A wallet your agents can use — only inside your rules.</h1>
+  <p style="margin-top:8px">You keep the owner key. An agent gets a scoped session. Revoke stops them.</p>
+  <div class="steps"><span class="on"></span><span></span><span></span><span></span></div>
+  <div class="card">
+    <h2>Start</h2>
+    <p>No browser extension detected in this environment. Create an owner key in this tab, then back it up before any grant.</p>
+    <div class="choice">
+      <button class="primary"><strong>Create owner key</strong><span class="muted">Recommended here — stays in this browser until you back it up</span></button>
+      <button><strong>Connect a browser wallet</strong><span class="muted">For identity and deposits. It cannot sign frame calls.</span></button>
+    </div>
+    <p class="fine">Keys live in this tab until Backup. Closing the tab without Backup deletes them.</p>
+  </div>
+</div>
+</body></html>

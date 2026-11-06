@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="_tokens.css"/>
+<title>Shepherd — Review then send</title>
+<style>
+  body { padding:24px; }
+  .wrap { max-width:480px; margin:0 auto; }
+  .kv { display:grid; grid-template-columns:120px 1fr; gap:10px; margin:16px 0; }
+  .kv span:first-child { color:var(--muted); }
+</style></head><body>
+<div class="wrap card">
+  <h2>Review</h2>
+  <h1 style="font-size:22px">In-policy ping</h1>
+  <p>This is the review step. Nothing is submitted until you confirm.</p>
+  <div class="kv">
+    <span>Signed by</span><span>Root agent session</span>
+    <span>Target</span><span class="mono">vault.ping()</span>
+    <span>Value</span><span>0 ETH</span>
+    <span>Policy</span><span>Allow</span>
+    <span>Route</span><span>Alt mempool</span>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn" style="flex:1">Back</button>
+    <button class="btn primary" style="flex:1">Send</button>
+  </div>
+</div>
+</body></html>

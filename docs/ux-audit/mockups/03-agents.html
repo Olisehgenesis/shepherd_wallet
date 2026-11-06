@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="_tokens.css"/>
+<title>Shepherd — Agents</title>
+<style>
+  body { padding: 24px; }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  .head { display:flex; justify-content:space-between; align-items:end; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .list { display:flex; flex-direction:column; gap:12px; }
+  .agent { display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center; }
+  .meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .rules { margin-top:10px; font-size:13px; color:var(--ink-soft); }
+  .rules li { margin: 4px 0; }
+  details { margin-top: 10px; }
+  summary { cursor:pointer; color: var(--forest); font-weight:600; font-size:13px; }
+</style></head><body>
+<div class="wrap">
+  <div class="head">
+    <div>
+      <div class="pill">You · owner</div>
+      <h1 style="margin-top:8px">Agents</h1>
+      <p>Each agent is a session key with a cap and an allowlist. Revoke is the kill switch.</p>
+    </div>
+    <button class="btn primary">Spawn child</button>
+  </div>
+  <div class="list">
+    <div class="card agent">
+      <div>
+        <strong>Root agent</strong>
+        <div class="meta">
+          <span class="pill">Active</span>
+          <span class="pill">Cap 0.001 ETH / call</span>
+          <span class="pill">Expires 11/7</span>
+        </div>
+        <ul class="rules">
+          <li>May call <span class="mono">vault.ping()</span> — allow</li>
+          <li>May call <span class="mono">vault.sweep()</span> — needs your co-sign</li>
+        </ul>
+        <details><summary>Addresses & policy editor</summary>
+          <p class="muted" style="margin-top:8px">Session 0x4Cf7…8aC8 · Policy saved on-chain. Edit rules here — not a separate Policy tab.</p>
+        </details>
+      </div>
+      <button class="btn danger">Revoke</button>
+    </div>
+    <div class="card">
+      <strong>No children yet</strong>
+      <p class="muted" style="margin-top:6px">Children cannot outspend or outlive the parent. Depth stops at 3.</p>
+    </div>
+  </div>
+</div>
+</body></html>
