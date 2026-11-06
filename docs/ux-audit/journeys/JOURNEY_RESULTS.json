@@ -1,0 +1,232 @@
+[
+  {
+    "journey": 1,
+    "name": "First-time visitor discovers Shepherd",
+    "completed": true,
+    "steps": [
+      "Opened /",
+      "Read hero + sections"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j01_landing.png"
+    ],
+    "friction": [
+      "Jargon-heavy eyebrow: \"Privacy infrastructure for agent calls\"",
+      "Assumes knowledge of EIP-8141",
+      "Mentions \"No fake scores\" but no scores exist — confusing"
+    ],
+    "copyFriction": [
+      "Privacy calls for you and your agent.",
+      "Let your agents make on-chain calls with policy-controlled execution and privacy-aware browser reads."
+    ],
+    "observation": "Hero does not say what YOU do vs what an AGENT does. Primary CTA is Connect Wallet before any explanation of needing a frame signer."
+  },
+  {
+    "journey": 2,
+    "name": "Visitor understands what Shepherd does",
+    "completed": true,
+    "steps": [
+      "Opened /how",
+      "Opened /docs",
+      "Opened /trust"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j02_how.png",
+      "/workspace/shepherd-ux-audit/journeys/j02_docs.png",
+      "/workspace/shepherd-ux-audit/journeys/j02_trust.png"
+    ],
+    "friction": [],
+    "copyFriction": [],
+    "observation": "How page length 1319; Docs 2046; Trust is more honest about privacy limits. A casual visitor would still struggle to explain the product in one sentence after landing alone.",
+    "excerpts": {
+      "how": "Skip to content\nShepherd\nHow it works\nPrivacy\nDocumentation\nConsole\nConnect Wallet\n\nHOW IT WORKS\n\nHow Shepherd decides\n\nA frame transaction carries a VERIFY frame and a call. Shepherd’s account approves the call only when the signer, the target, the selector, and the value all fit the session.\n\n1\nYou are the owner path\n\nEmpty VERIFY data means the frame signer is the owner. That path does not read the policy, so it can deploy, stake, grant, and revoke while the account is unstaked.\n\n2\nThe agent is the other path\n\nVERIFY data 0x01 means the signer must be an active session. The account then rea",
+      "docs": "Skip to content\nShepherd\nHow it works\nPrivacy\nDocumentation\nConsole\nConnect Wallet\n\nDOCUMENTATION\n\nHow to use Shepherd\n\nYou need a browser wallet, or a WalletConnect project id, and a network path to the public devnet. No API key is required for the injected path.\n\nIn the console\nOpen the console and use Connect wallet. Any EIP-6963 wallet can appear. WalletConnect needs VITE_WALLETCONNECT_PROJECT_ID. Export/import the frame signer from Wallet → Backup.\nOpen Overview and choose Prepare the account. Shepherd funds the frame signer from the shared genesis key, then the three contracts deploy. Th",
+      "trust": "Skip to content\nShepherd\nHow it works\nPrivacy\nDocumentation\nConsole\nConnect Wallet\n\nPRIVACY\n\nWhat Shepherd claims\nCensorship resistance\n\nThe agent path reads another contract during VERIFY. Canonical rules reject that read. A staked account on the alt mempool can be admitted. There is no private relay in front of this.\n\nOpen source\n\nMIT. No tracker, no analytics script, no font CDN. The pages in this app are the docs.\n\nPrivacy\n\nBrowser chain reads go through the Anon-RPC harness. The worker cannot touch keys, cookies, or the DOM. It can see every request body. The reference worker fulfils call"
+    }
+  },
+  {
+    "journey": 3,
+    "name": "Connects a wallet or creates a frame signer",
+    "completed": true,
+    "steps": [
+      "Open /console",
+      "Click Connect wallet",
+      "Create frame signer"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j03_console_before.png",
+      "/workspace/shepherd-ux-audit/journeys/j03_wallet_modal_connect.png",
+      "/workspace/shepherd-ux-audit/journeys/j03_after_create_signer.png",
+      "/workspace/shepherd-ux-audit/journeys/j03_after_wallet_close.png"
+    ],
+    "friction": [],
+    "copyFriction": [
+      "Any injected wallet works — but MetaMask is not available here"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1319\nAnon-RPC harness\n100% anon reads\nConnect wallet\nOverview\n\nFour steps. The console only offers the one you have not finished.\n\nSTART BY CONNECTING A WALLET\n\nShepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set.\n\nConnect a wallet\nTRUST\n\nThe worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.\n\nRead the trust page\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 4,
+    "name": "Prepares an account",
+    "completed": false,
+    "steps": [
+      "Ensure frame signer",
+      "Click Prepare if present",
+      "Wait for chain response"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j04_overview_ready.png",
+      "/workspace/shepherd-ux-audit/journeys/j04_after_prepare.png"
+    ],
+    "friction": [
+      "Prepare button not found. Buttons: Wallet | Connect wallet | Connect a wallet"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1321\nAnon-RPC harness\n100% anon reads\nConnect wallet\nOverview\n\nFour steps. The console only offers the one you have not finished.\n\nSTART BY CONNECTING A WALLET\n\nShepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set.\n\nConnect a wallet\nTRUST\n\nThe worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.\n\nRead the trust page\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 5,
+    "name": "Creates and grants an agent session",
+    "completed": true,
+    "steps": [
+      "Open Session",
+      "Issue/Grant session",
+      "No reveal"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j05_session_empty.png",
+      "/workspace/shepherd-ux-audit/journeys/j05_after_grant.png"
+    ],
+    "friction": [],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1323\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo account yet\n\nPrepare the account on Overview. A session is granted to that account, not to a placeholder.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 6,
+    "name": "Configures permissions and spending limits",
+    "completed": false,
+    "steps": [
+      "Open Policy",
+      "Found 0 inputs",
+      "No save click"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j06_policy.png",
+      "/workspace/shepherd-ux-audit/journeys/j06_after_save.png"
+    ],
+    "friction": [
+      "No obvious form inputs for spending limits on first look"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1324\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo policy yet\n\nPrepare the account first. Rules are written to ShepherdPolicy on-chain.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 7,
+    "name": "Spawns a child agent",
+    "completed": false,
+    "steps": [
+      "Open Agents",
+      "Failed to spawn"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j07_agents.png",
+      "/workspace/shepherd-ux-audit/journeys/j07_after_spawn.png"
+    ],
+    "friction": [
+      "Spawn control not found: Wallet | Connect wallet"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1325\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo account for agents\n\nPrepare and issue a root session first. Child agents are clipped to the parent cap and expiry.\n\nOpen Session\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 8,
+    "name": "Attempts an allowed transaction (ping)",
+    "completed": false,
+    "steps": [
+      "Try stake",
+      "Open Intents",
+      "Ping / Review and send"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j08_intents.png",
+      "/workspace/shepherd-ux-audit/journeys/j08_after_stake.png",
+      "/workspace/shepherd-ux-audit/journeys/j08_after_ping.png"
+    ],
+    "friction": [
+      "Ping controls not found: Wallet | Connect wallet"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1327\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo active session\n\nIntents are signed by the session key. Issue one first. The chain still re-checks the call.\n\nIssue a session\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 9,
+    "name": "Attempts a prohibited transaction (drain)",
+    "completed": false,
+    "steps": [
+      "Open Intents",
+      "Submit drain"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j09_drain.png"
+    ],
+    "friction": [
+      "Drain outcome not clearly shown as prohibited/rejected in UI text",
+      "Drain button not found"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1327\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo active session\n\nIntents are signed by the session key. Issue one first. The chain still re-checks the call.\n\nIssue a session\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 10,
+    "name": "Handles a high-risk approval (sweep)",
+    "completed": false,
+    "steps": [
+      "Submit sweep",
+      "Open Approvals",
+      "Approve/cosign"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j10_sweep_intent.png",
+      "/workspace/shepherd-ux-audit/journeys/j10_approvals.png",
+      "/workspace/shepherd-ux-audit/journeys/j10_after_approve.png"
+    ],
+    "friction": [
+      "Sweep button not found"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1329\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo account\n\nApprovals appear when an agent proposes a high-risk call that needs your co-sign.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 11,
+    "name": "Revokes an agent",
+    "completed": false,
+    "steps": [
+      "Open Session",
+      "Revoke"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j11_before_revoke.png",
+      "/workspace/shepherd-ux-audit/journeys/j11_after_revoke.png"
+    ],
+    "friction": [
+      "After revoke, UI does not clearly communicate what happened to the agent"
+    ],
+    "observation": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1330\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo account yet\n\nPrepare the account on Overview. A session is granted to that account, not to a placeholder.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+  },
+  {
+    "journey": 12,
+    "name": "Checks transaction history and privacy status",
+    "completed": true,
+    "steps": [
+      "Activity",
+      "Reads",
+      "Trust page"
+    ],
+    "screenshots": [
+      "/workspace/shepherd-ux-audit/journeys/j12_activity.png",
+      "/workspace/shepherd-ux-audit/journeys/j12_reads.png",
+      "/workspace/shepherd-ux-audit/journeys/j12_reads_after.png",
+      "/workspace/shepherd-ux-audit/journeys/j12_trust.png"
+    ],
+    "friction": [
+      "Activity empty or sparse — history may be session-local only"
+    ],
+    "observation": {
+      "activity": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1331\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNo activity yet\n\nAdmits, denies, grants, and approvals land here for this account in this browser.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—",
+      "reads": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1331\nAnon-RPC harness\n100% anon reads\nConnect wallet\nNothing to read yet\n\nPrepare the account first. This page then asks the harness for balance and code.\n\nGo to Overview\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+    }
+  }
+]

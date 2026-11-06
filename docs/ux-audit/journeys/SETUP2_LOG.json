@@ -1,0 +1,323 @@
+{
+  "outcome": "prepared",
+  "log": [
+    {
+      "outcome": "prepared",
+      "account": "0x19c5…731f",
+      "body": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1365\nAnon-RPC harness\n100% anon reads\nAccount · 0x19c5…731f\nOverview\n\nFour steps. The console only offers the one you have not finished.\n\nSTART BY CONNECTING A WALLET\n\nShepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set.\n\nConnect a wallet\nRefresh\nTRUST\n\nThe worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.\n\nRead the trust page\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_getBalance\tanon\tok\t—\ndeploy\tclear\tready\t—\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—\nWallet\nClose\n\nShepherd account · Alt mempool devnet\n\n0 ETH\n\n0x19c5…731f\nCopy\nSend\nReceive\nSigners\nBackup\nBrowser\nNot connected\nFrame signer\n0x9c47…3d24\nAccount\n0x19c5…731f\nSession\nInactive\nStake\nAbsent\nRefresh\nConnect browser",
+      "net": [
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/rpc"
+        },
+        {
+          "status": 200,
+          "url": "https://altmempool.forshtat.com/"
+        }
+      ]
+    },
+    {
+      "tab": "Receive",
+      "text": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1365\nAnon-RPC harness\n100% anon reads\nAccount · 0x19c5…731f\nOverview\n\nFour steps. The console only offers the one you have not finished.\n\nSTART BY CONNECTING A WALLET\n\nShepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set.\n\nConnect a wallet\nRefresh\nTRUST\n\nThe worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.\n\nRead the trust page\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_getBalance\tanon\tok\t—\ndeploy\tclear\tready\t—\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—\nReceive\nClose\n← Back\n\nDeposit only with fund(). A plain transfer hits the VERIFY fallback and reverts.\n\nShepherd account\n\n0x19c53cbf978c63e45c6359f96adf640d8233"
+    },
+    {
+      "overviewStillConnect": true,
+      "overviewHasPrepare": false,
+      "overviewText": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1365\nAnon-RPC harness\n100% anon reads\nAccount · 0x19c5…731f\nOverview\n\nFour steps. The console only offers the one you have not finished.\n\nSTART BY CONNECTING A WALLET\n\nShepherd needs a human on the other side of the session. Any injected wallet works. WalletConnect works when a project id is set.\n\nBalance 0.04 ETH, read anon. Session inactive. Stake absent. Cap 0 ETH. Policy rules 2. Agents 0.\n\nConnect a wallet\nRefresh\nTRUST\n\nThe worker sees request bodies. The reference specifier uses ordinary fetch, so this harness does not unlink your IP. It does keep the worker off your keys, cookies, and DOM.\n\nRead the trust page\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_getBalance\tanon\tok\t—\ndeploy\tclear\tready\t—\neth_chainId\tanon\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+    },
+    {
+      "session": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1369\nAnon-RPC harness\n40% anon reads\nAccount · 0x19c5…731f\nSession\n\nIssue a key for the agent. Set the per-call value cap and TTL at grant time. Revoke clears it on-chain.\n\nLIMITS\n\nStatus inactive · Connected no · Cap 0 ETH · Expiry — · Spent this session (local) 0 ETH\n\nCap is per call on-chain, not a cumulative budget. Spent is tracked locally from admitted agent values in this tab. Policy: 2 rules\n\nValue cap (ETH)\nTTL (seconds)\nNO ACTIVE SESSION\nIssue session key\nP256 CO-SIGNER\n\nNo P256 co-signer yet. High-risk can also be co-signed by the frame signer.\n\nRegister P256 co-signer\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_getBalance\tanon\tok\t—\neth_chainId\tanon\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+    },
+    {
+      "issued": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1371\nAnon-RPC harness\n50% anon reads\nAccount · 0x19c5…731f\nSession\n\nIssue a key for the agent. Set the per-call value cap and TTL at grant time. Revoke clears it on-chain.\n\nLIMITS\n\nStatus inactive · Connected no · Cap 0 ETH · Expiry — · Spent this session (local) 0 ETH\n\nCap is per call on-chain, not a cumulative budget. Spent is tracked locally from admitted agent values in this tab. Policy: 2 rules\n\nValue cap (ETH)\nTTL (seconds)\nNO ACTIVE SESSION\nGrant again\nRevoke\nReveal session key once\nP256 CO-SIGNER\n\nNo P256 co-signer yet. High-risk can also be co-signed by the frame signer.\n\nRegister P256 co-signer\nOPS LOG\nMethod\tRoute\tVerdict\tLink\neth_getBalance\tanon\tok\t—\ngrantSession\tclear\tadmitted:included\tExplorer\neth_getBalance\tanon\tok\t—\neth_chainId\tanon\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+    },
+    {
+      "revealTwiceWorks": true
+    },
+    {
+      "policy": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1372\nAnon-RPC harness\n40% anon reads\nAccount · 0x19c5…731f\nPolicy\n\nAllowlist lives outside the account. Mode 1 allows, mode 2 needs co-sign, mode 0 removes. Save writes on-chain.\n\nON-CHAIN RULES\nLabel\tTarget\tSelector\tMode\t\nvault.ping()\t0xf707…8bbe\t0x5c36b186\tallow\tRemove\nvault.sweep()\t0xf707…8bbe\t0x35faa416\thigh-risk\tRemove\nADD OR UPDATE RULE\nTarget\nSelector or signature\nLabel (optional)\nMode\nAllow (1)\nHigh-risk / needs cosign (2)\nDeny / remove (0)\nSave on-chain\nRefresh from chain\nOPS LOG\nMethod\tRoute\tVerdict\tLink\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\neth_getBalance\tanon\tok\t—\neth_chainId\tanon\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—",
+      "inputs": 4
+    },
+    {
+      "agents": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1373\nAnon-RPC harness\n40% anon reads\nAccount · 0x19c5…731f\nAgents\n\nDepth stops at 3. Each parent can have 8 children. Same rules as MCP — live in this console.\n\nSPAWN\nParent\nroot\nCap ETH (optional)\nTTL seconds\nSpawn child\n\nCLI/MCP docs stay at /mcp. This page is the live owner view.\n\nTREE\nId\tParent\tDepth\tAddress\tCap\tExpiry\t\nroot\t—\t0\t0x4Cf7…8aC8\t0.001 ETH\t11/7/2026, 11:45:54 AM\t\nNo children yet.\nOPS LOG\nMethod\tRoute\tVerdict\tLink\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\nposture\tclear\tactive\t—\neth_getBalance\tanon\tok\t—\neth_chainId\tanon\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\neth_getBalance\tclear\tok\t—\nspecifier.workerHash\tclear\tbootstrap\t—"
+    },
+    {
+      "revokeHasConfirm": false,
+      "afterClick": "Shepherd\n\nCONSOLE\n\nOverview\nSession\nPolicy\nAgents\nIntents\nApprovals\nReads\nMempool\nActivity\nWallet\nHow to use\nMCP docs\nBack to site\nAlt mempool devnet · 1337\nethrex live · #1379\nAnon-RPC harness\n40% anon reads\nAccount · 0x19c5…731f\n\nRevoking the session\n\nSession\n\nIssue a key for the agent. Set the per-call value cap and TTL at grant time. Revoke clears it on-chain.\n\nLIMITS\n\nStatus active · Connected yes (key handed off or used) · Cap 0.001 ETH · Expiry 11/7/2026, 11:45:54 AM · Spent this session (local) 0 ETH\n\nCap is per call on-chain, not a cumulative budget. Spent is tracked locally from admitted agent values in this tab. Policy: 2 rules\n\nValue cap (ETH)\nTTL (seconds)\nSESSION ACTIVE\nGrant again\nRevoke\nReveal session key once\nP256 CO-SIGNER\n\nNo P256 co-signer yet. High-risk can also be co-"
+    }
+  ],
+  "net": [
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    },
+    {
+      "status": 200,
+      "url": "https://altmempool.forshtat.com/rpc"
+    }
+  ]
+}

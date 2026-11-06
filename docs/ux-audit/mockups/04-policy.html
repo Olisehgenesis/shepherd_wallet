@@ -1,0 +1,34 @@
+<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="stylesheet" href="_tokens.css"/>
+<title>Shepherd — Agent permissions</title>
+<style>
+  body { padding:24px; }
+  .wrap { max-width:720px; margin:0 auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th { text-align:left; color:var(--muted); font-weight:600; padding:8px 6px; border-bottom:1px solid var(--line); }
+  td { padding:12px 6px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .mode { display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; font-weight:600; }
+  .allow { background:var(--sage-2); color:var(--forest); }
+  .cosign { background:var(--warn-bg); color:var(--warn); }
+  .actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+</style></head><body>
+<div class="wrap">
+  <p class="muted">Agents / Root agent / Permissions</p>
+  <h1>What this agent may do</h1>
+  <p style="margin:8px 0 18px">Plain labels. Hex selectors stay under “Advanced”.</p>
+  <div class="card">
+    <table>
+      <thead><tr><th>Call</th><th>Permission</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ping vault</strong><div class="mono muted">vault.ping()</div></td><td><span class="mode allow">Allow</span></td><td><button class="btn ghost">Remove</button></td></tr>
+        <tr><td><strong>Sweep vault</strong><div class="mono muted">vault.sweep()</div></td><td><span class="mode cosign">Needs your co-sign</span></td><td><button class="btn ghost">Remove</button></td></tr>
+      </tbody>
+    </table>
+    <div class="actions">
+      <button class="btn">Add permission</button>
+      <button class="btn primary">Save on-chain</button>
+    </div>
+    <p class="muted" style="margin-top:12px">TTL shown on the agent is informational today. Revoke is what actually stops them.</p>
+  </div>
+</div>
+</body></html>
